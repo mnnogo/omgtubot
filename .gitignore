@@ -164,3 +164,4 @@ cython_debug/
 /config.py
 /encryption.py
 /idea.txt
+/log.txt
