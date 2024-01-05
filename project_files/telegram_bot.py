@@ -20,6 +20,7 @@ from aiogram.filters import CommandStart
 # конфигурация логгинга
 logging = logging.getLogger(__name__)
 
+# создание бота
 bot = Bot(config.TELEGRAM_BOT_TOKEN, parse_mode='HTML')
 dp = Dispatcher()
 
@@ -30,7 +31,7 @@ notif_router = Router()  # настройка уведомлений
 
 dp.include_routers(auth_router, view_router, notif_router)
 
-# id разработчика для уведомлений о критических ошибках
+# id разработчика для уведомлений
 DEVELOPER_CHAT_ID = 1876123382
 
 
@@ -202,6 +203,7 @@ async def view_all_works_command(message: Message):
     # получение логина из БД по телеграм айди
     login = database_oper.get_user_login(message.from_user.id)
 
+    # получение работ из БД по логину
     all_works = database_oper.get_old_student_works(login)
 
     i = 1

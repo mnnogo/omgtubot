@@ -1,0 +1,22 @@
+version: '3.1'
+
+services:
+  python:
+    build: ./
+    environment:
+      - KEY=YOUR_KEY
+    
+  db:
+    image: mysql
+    command: --default-authentication-plugin=caching_sha2_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8081:80
+    environment:
+      - PMA_ARBITRARY=1

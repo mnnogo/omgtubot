@@ -3,4 +3,7 @@
 
 Для работы программы нужно в файле config.py создать переменную TELEGRAM_BOT_TOKEN с токеном бота ТГ. В файле encryption.py создать функции encrypt(password) и decrypt(password), или убрать строки из telegram_bot.py, вызывающие ошибки. Также необходима локальная база данных с логином и паролем root.
 
+Для получения логов из docker'а команда: docker cp omgtu_bot_container:/usr/src/app/log.txt path\log.txt
+
+
 Ссылка на бота: t.me/omgtu_notification_bot

@@ -161,7 +161,16 @@ cython_debug/
 
 /shelf/
 /workspace.xml
+
 /config.py
 /encryption.py
 /idea.txt
 /log.txt
+
+# docker files
+../Dockerfile
+../docker-compose.yml
+Dockerfile
+docker-compose.yml
+/Dockerfile
+/docker-compose.yml

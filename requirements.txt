@@ -1,0 +1,7 @@
+pymysql
+aiogram
+bs4
+encryption
+cryptography
+requests
+flask

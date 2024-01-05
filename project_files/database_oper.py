@@ -16,7 +16,7 @@ def make_sql_query(query: str, params: tuple):
                    variable parameters)"""
     try:
         connection = pymysql.connect(
-            host='127.0.0.1',
+            host='db',
             user='root',
             password='root',
             database='omgtu_bot'
