@@ -2,7 +2,6 @@ from typing import Any
 from logger import logging
 import pymysql
 import encryption
-import socket
 from WorkInfo import *
 
 # конфигурация логгинга
@@ -16,8 +15,6 @@ def make_sql_query(query: str, params: tuple) -> tuple[tuple[Any, ...], ...]:
     :param query: SQL query with %s instead of variable parameters
     :param params: tuple with parameters that should be instead of %s in the exact order (empty tuple if there's no
                    variable parameters)"""
-
-
     try:
         connection = pymysql.connect(
             host='db',

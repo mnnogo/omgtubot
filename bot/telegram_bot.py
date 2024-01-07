@@ -1,5 +1,4 @@
 import WorkInfo
-import config
 import database_oper
 import user_functions
 import html_parser
@@ -352,7 +351,6 @@ async def send_notification(user_id: int, works: list[WorkInfo]):
     await bot.send_message(user_id, msg)
 
 
-# обработка ошибок внутри бота
 @dp.error()
 async def errors_handler(event: ErrorEvent):
     exception_text = event.format_exc()
