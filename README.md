@@ -1,9 +1,10 @@
 # omgtubot
 Бот для уведомлений об изменении статуса работ студента на omgtu.ru 
 
-Для работы программы нужно в файле config.py создать переменную TELEGRAM_BOT_TOKEN с токеном бота ТГ. В файле encryption.py создать функции encrypt(password) и decrypt(password), или убрать строки из telegram_bot.py, вызывающие ошибки. Также необходима локальная база данных с логином и паролем root.
+Для работы программы нужно создать переменные окружения TELEGRAM_API_TOKEN, TELEGRAM_ID. В файле encryption.py создать функции encrypt(password) и decrypt(password). Также необходима база данных.
 
-Для получения логов из docker'а команда: docker cp omgtu_bot_container:/usr/src/app/log.txt path\log.txt
-
+Для запуска готового докера (из корневого каталога):
+1. docker-compose build
+2. docker-compose up
 
 Ссылка на бота: t.me/omgtu_notification_bot
