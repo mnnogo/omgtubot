@@ -17,7 +17,7 @@ def make_sql_query(query: str, params: tuple) -> tuple[tuple[Any, ...], ...]:
                    variable parameters)"""
     try:
         connection = pymysql.connect(
-            host='db',
+            host='127.0.0.1',
             user='root',
             password='root',
             database='omgtu_bot'
@@ -100,6 +100,16 @@ def is_user_authorized(user_id: int) -> bool:
     user_encounters = make_sql_query('SELECT COUNT(*) FROM user_info WHERE tg_id = %s', (user_id,))[0][0]
 
     return user_encounters != 0
+
+
+def is_user_subscribed(user_id: int) -> bool:
+    r""""""
+    result = make_sql_query('SELECT notifications FROM user_info WHERE tg_id = %s', (user_id,))
+
+    if len(result) == 0:
+        return False
+
+    return bool(result[0][0])
 
 
 def get_user_login(user_id: int) -> str | None:

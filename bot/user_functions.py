@@ -1,7 +1,7 @@
 import requests
 from WorkInfo import *
 import html_parser
-import database_oper
+import database
 from logger import logging
 
 # конфигурация логгинга
@@ -10,7 +10,7 @@ logging = logging.getLogger(__name__)
 
 def get_notification_senders_list() -> list[int]:
     r""":return: users' telegram ID list of users, who should get notification"""
-    return database_oper.get_id_notification_subscribers()
+    return database.get_id_notification_subscribers()
 
 
 def get_updated_student_works(login: str, password: str = None, session: requests.Session = None) -> list[WorkInfo]:
@@ -23,14 +23,14 @@ def get_updated_student_works(login: str, password: str = None, session: request
     updated_student_info = []
 
     if password is None:
-        password = database_oper.get_user_password(login=login)
+        password = database.get_user_password(login=login)
 
     # если сессия не передана в функцию - создаем
     if session is None:
         session = html_parser.authorize(login, password)
 
     # получение работ до проверки и после проверки
-    old_student_info = database_oper.get_old_student_works(login)
+    old_student_info = database.get_old_student_works(login)
     new_student_info = html_parser.get_new_student_works(session)
 
     for workInfo in new_student_info:
@@ -66,10 +66,10 @@ def get_updated_status_works(login: str = None, updated_works: list[WorkInfo] = 
 
 def change_user_notification_subscribe(user_id: int, notification_subscribe: bool) -> None:
     r"""Changes info about notification subsсription for user"""
-    database_oper.change_user_notification_subscribe(user_id, notification_subscribe)
+    database.change_user_notification_subscribe(user_id, notification_subscribe)
 
 
 def update_all_user_works_list(login: str) -> None:
     r"""Updates ALL user works with new information"""
-    updated_works = get_updated_student_works(login, database_oper.get_user_password(login=login))
-    database_oper.update_student_works_db(updated_works, login)
+    updated_works = get_updated_student_works(login, database.get_user_password(login=login))
+    database.update_student_works_db(updated_works, login)
