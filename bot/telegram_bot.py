@@ -14,7 +14,8 @@ from aiogram import Bot, Dispatcher, F, Router
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.types import Message, KeyboardButton, InlineKeyboardButton, CallbackQuery, ErrorEvent
 from aiogram.filters import CommandStart
-from bot_routers import authentication
+
+from bot_routers import authorization, view_works
 
 # конфигурация логгинга
 logging = logging.getLogger(__name__)
@@ -24,11 +25,11 @@ TOKEN = os.getenv('TELEGRAM_API_TOKEN')
 bot = Bot(token=TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher()
 
-view_router = Router()      # просмотр работ
 grades_router = Router()    # зачетка с оценками
 settings_router = Router()  # настройки
 
-dp.include_routers(authentication.router, view_router, grades_router, settings_router)
+# подключение роутеров из файлов (разбито по кнопкам)
+dp.include_routers(authorization.router, view_works.router, grades_router, settings_router)
 
 # id разработчика для уведомлений
 DEVELOPER_CHAT_ID = os.getenv('TELEGRAM_ID')
@@ -75,36 +76,6 @@ async def start_command(message: Message):
 
     # отправка приветствия + добавление клавиатуры
     await message.reply(msg, reply_markup=builder.as_markup(resize_keyboard=True))
-
-
-# нажатие кнопки "Посмотреть список работ"
-@view_router.message(F.text == 'Посмотреть список работ')
-async def view_all_works_command(message: Message):
-    if not database.is_user_authorized(message.from_user.id):
-        await message.reply('Вы еще не авторизованы. Для просмотра списка работ пройдите <b>Авторизацию</b>.')
-        return
-
-    # получение логина из БД по телеграм айди
-    login = database.get_user_login(message.from_user.id)
-
-    # получение работ из БД по логину
-    all_works = database.get_old_student_works(login)
-
-    i = 1
-    msg = '<b>Список Ваших работ:</b>\n'
-    for work in all_works:
-        msg += f'\n{i}. {str(work)}\n'
-        i += 1
-
-    await message.reply(msg)
-
-
-# нажатие кнопки "Посмотреть зачетку"
-@grades_router.message(F.text == 'Посмотреть зачетку')
-async def view_all_grades(message: Message, state: FSMContext):
-    if not database.is_user_authorized(message.from_user.id):
-        await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')
-        return
 
 
 # нажатие кнопки "Настройки"
@@ -165,7 +136,7 @@ async def btn_cancel_notif_pressed(query: CallbackQuery, state: FSMContext):
 
     await query.message.delete()
     await query.message.answer('Уведомления больше не будут приходить.')
-
+    # выход из ожидания
     await state.clear()
 
 
@@ -272,8 +243,9 @@ async def run_bot():
     # # запуск периодической проверки на уведомления
     # asyncio.ensure_future(send_notifications_periodically())
 
+    logging.debug('Попытка запустить бота...')
+
     try:
-        logging.debug('Попытка запустить бота...')
         await dp.start_polling(bot)
     except Exception as e:
         logging.exception(e)

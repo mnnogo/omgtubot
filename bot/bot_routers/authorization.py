@@ -15,6 +15,10 @@ router = Router()
 r"""Router for authorization button"""
 
 
+# конфигурация логгинга
+logging = logging.getLogger(__name__)
+
+
 class States(StatesGroup):
     r"""Stores which stage of the dialogue the client is at"""
     waiting_for_login = State()
