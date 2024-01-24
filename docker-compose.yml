@@ -1,15 +1,12 @@
 version: '3.1'
 
 services:
-  python:
-    build: ./
-    environment:
-      - KEY=YOUR_KEY
-    
   db:
     image: mysql
     command: --default-authentication-plugin=caching_sha2_password
     restart: always
+    ports:
+       - '6603:3306'
     environment:
       MYSQL_ROOT_PASSWORD: root
 
@@ -20,3 +17,10 @@ services:
       - 8081:80
     environment:
       - PMA_ARBITRARY=1
+    
+  python:
+    build: ./
+    environment:
+      KEY: YOUR_KEY
+      TELEGRAM_API_TOKEN: YOUR_BOT_API_TOKEN
+      TELEGRAM_ID: YOUR_TELEGRAM_ID
