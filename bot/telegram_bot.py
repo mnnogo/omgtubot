@@ -2,7 +2,6 @@ import WorkInfo
 import database
 import user_functions
 import html_parser
-import encryption
 import background
 from logger import logging
 import os
@@ -11,10 +10,11 @@ import time
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram import Bot, Dispatcher, F, Router, types
+from aiogram import Bot, Dispatcher, F, Router
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.types import Message, KeyboardButton, InlineKeyboardButton, CallbackQuery, ErrorEvent
 from aiogram.filters import CommandStart
+from bot_routers import authentication
 
 # конфигурация логгинга
 logging = logging.getLogger(__name__)
@@ -24,26 +24,17 @@ TOKEN = os.getenv('TELEGRAM_API_TOKEN')
 bot = Bot(token=TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher()
 
-# разделение диспатчера на рутеры
-auth_router = Router()      # аутентификация
 view_router = Router()      # просмотр работ
 grades_router = Router()    # зачетка с оценками
 settings_router = Router()  # настройки
 
-dp.include_routers(auth_router, view_router, grades_router, settings_router)
+dp.include_routers(authentication.router, view_router, grades_router, settings_router)
 
 # id разработчика для уведомлений
 DEVELOPER_CHAT_ID = os.getenv('TELEGRAM_ID')
 
 
 class States(StatesGroup):
-    r"""Stores which stage of the dialogue the client is at"""
-
-    class auth(StatesGroup):
-        waiting_for_login = State()
-        waiting_for_password = State()
-        waiting_for_change_acc_answer = State()
-
     class settings_menu(StatesGroup):
         waiting_for_choice = State()
 
@@ -84,120 +75,6 @@ async def start_command(message: Message):
 
     # отправка приветствия + добавление клавиатуры
     await message.reply(msg, reply_markup=builder.as_markup(resize_keyboard=True))
-
-
-# нажатие кнопки "Авторизация"
-@auth_router.message(F.text == 'Авторизация')
-async def authorization_command(message: Message, state: FSMContext):
-    # если пользователь уже авторизован ###########################################
-    if database.is_user_authorized(message.from_user.id):
-        # создание клавиатуры под сообщением
-        btn_yes = InlineKeyboardButton(text='✅ Да', callback_data='btn_change_account')
-        btn_no = InlineKeyboardButton(text='❌ Нет', callback_data='btn_decline_change_account')
-
-        builder = InlineKeyboardBuilder()
-        builder.row(btn_yes, btn_no)
-
-        await message.reply(f'Вы уже авторизованы под логином "{database.get_user_login(message.from_user.id)}". '
-                            f'Хотите <b>изменить</b> аккаунт?', reply_markup=builder.as_markup())
-        # переход в ожидание нажатия кнопки
-        await state.set_state(States.auth.waiting_for_change_acc_answer)
-        return
-    ################################################################################
-
-    await message.reply('Введите логин от аккаунта:')
-    # ожидание ввода логина
-    await state.set_state(States.auth.waiting_for_login)
-
-
-# нажата кнопка '✅ Да' при смене аккаунта
-@auth_router.callback_query(States.auth.waiting_for_change_acc_answer, F.data == 'btn_change_account')
-async def btn_change_account_pressed(query: CallbackQuery, state: FSMContext):
-    await query.message.reply('Введите новый логин:')
-    # ожидание ввода логина
-    await state.set_state(States.auth.waiting_for_login)
-
-
-# нажата кнопка '❌ Нет' при смене аккаунта
-@auth_router.callback_query(States.auth.waiting_for_change_acc_answer, F.data == 'btn_decline_change_account')
-async def btn_decline_change_pressed(query: CallbackQuery, state: FSMContext):
-    await query.message.delete()
-    await query.message.answer('Операция отменена')
-    # выход из ожидания
-    await state.clear()
-
-
-# запрос пароля после ввода логина
-@auth_router.message(States.auth.waiting_for_login)
-async def wait_for_password(message: Message, state: FSMContext):
-    # сохранение логина для следующих состояний
-    await state.update_data(login=message.text)
-
-    await message.answer('Введите пароль от аккаунта:')
-    # ожидание ввода пароля
-    await state.set_state(States.auth.waiting_for_password)
-
-
-# обработка логина и пароля после их ввода
-@auth_router.message(States.auth.waiting_for_password)
-async def authorization_handler(message: Message, state: FSMContext):
-    warning_message = await message.answer('Выполняется проверка на корректность данных. Процесс может занять около '
-                                           'минуты...')
-    _data = await state.get_data()
-
-    login = _data.get('login')
-    password = message.text
-
-    # информация в логи
-    logging.info(f'Началась авторизация пользователя "{message.from_user.id}", логин - "{login}"...')
-    start_time = time.time()
-
-    # попытка зайти в аккаунт
-    session = html_parser.authorize(login, password)
-
-    await warning_message.delete()
-
-    if session == 1:
-        await message.answer('Ошибка при подключении к сайту. Попробуйте позже')
-        await state.clear()
-        return
-
-    if session == 2:
-        await message.answer('Данные введены некорректно. Нажмите "Авторизация" еще раз и попробуйте снова.')
-        await state.clear()
-        return
-
-    await message.answer('Успешно. Анализируем информацию с сайта. Процесс может занять около 3 минут.......')
-
-    # если пользователь уже был авторизован и меняет аккаунт, удаление старых работ из БД
-    if database.is_user_authorized(message.from_user.id):
-        login = database.get_user_login(message.from_user.id)
-        database.delete_all_student_works(login)
-
-    # кодирование пароля перед занесением в БД
-    encrypted_password = encryption.encrypt(password)
-
-    # добавление/обновление пользователя в БД
-    database.update_user_in_db(message.from_user.id, login, encrypted_password)
-    # добавление/обновление работ в БД
-    all_works = html_parser.get_new_student_works(session)
-    database.update_student_works_db(all_works, login)
-
-    i = 1
-    msg = 'Успешно. При изменении статуса работ Вам придет уведомление.\n' \
-          '\n' \
-          '<b>Список Ваших работ</b>:\n'
-    for work in all_works:
-        msg += f'\n{i}. {str(work)}\n'
-        i += 1
-
-    await message.answer(msg)
-
-    # информация в логи
-    end_time = time.time()
-    logging.info(f'Авторизация закончилась. Затраченное время: {end_time - start_time}')
-
-    await state.clear()
 
 
 # нажатие кнопки "Посмотреть список работ"
