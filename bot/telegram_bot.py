@@ -25,11 +25,12 @@ bot = Bot(token=TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher()
 
 # разделение диспатчера на рутеры
-auth_router = Router()  # аутентификация
-view_router = Router()  # просмотр работ
-notif_router = Router()  # настройка уведомлений
+auth_router = Router()      # аутентификация
+view_router = Router()      # просмотр работ
+grades_router = Router()    # зачетка с оценками
+settings_router = Router()  # настройки
 
-dp.include_routers(auth_router, view_router, notif_router)
+dp.include_routers(auth_router, view_router, grades_router, settings_router)
 
 # id разработчика для уведомлений
 DEVELOPER_CHAT_ID = os.getenv('TELEGRAM_ID')
@@ -43,7 +44,7 @@ class States(StatesGroup):
         waiting_for_password = State()
         waiting_for_change_acc_answer = State()
 
-    class notif_menu(StatesGroup):
+    class settings_menu(StatesGroup):
         waiting_for_choice = State()
 
 
@@ -71,12 +72,14 @@ async def start_command(message: Message):
     # шаблоны кнопок на главном экране
     btn_auth = KeyboardButton(text='Авторизация')
     btn_works_list = KeyboardButton(text='Посмотреть список работ')
-    btn_notif_settings = KeyboardButton(text='Настройка уведомлений')
+    btn_grades_list = KeyboardButton(text='Посмотреть зачетку')
+    btn_notif_settings = KeyboardButton(text='Настройки')
 
     # добавление кнопок на клавиатуру
     builder = ReplyKeyboardBuilder()
     builder.row(btn_auth)
     builder.row(btn_works_list)
+    builder.row(btn_grades_list)
     builder.row(btn_notif_settings)
 
     # отправка приветствия + добавление клавиатуры
@@ -138,8 +141,8 @@ async def wait_for_password(message: Message, state: FSMContext):
 # обработка логина и пароля после их ввода
 @auth_router.message(States.auth.waiting_for_password)
 async def authorization_handler(message: Message, state: FSMContext):
-    await message.answer('Выполняется проверка на корректность данных. Процесс может занять около минуты...')
-
+    warning_message = await message.answer('Выполняется проверка на корректность данных. Процесс может занять около '
+                                           'минуты...')
     _data = await state.get_data()
 
     login = _data.get('login')
@@ -151,6 +154,8 @@ async def authorization_handler(message: Message, state: FSMContext):
 
     # попытка зайти в аккаунт
     session = html_parser.authorize(login, password)
+
+    await warning_message.delete()
 
     if session == 1:
         await message.answer('Ошибка при подключении к сайту. Попробуйте позже')
@@ -199,7 +204,7 @@ async def authorization_handler(message: Message, state: FSMContext):
 @view_router.message(F.text == 'Посмотреть список работ')
 async def view_all_works_command(message: Message):
     if not database.is_user_authorized(message.from_user.id):
-        await message.reply('Вы еще не авторизованы. Для просмотра списка работ пройдите <b>Авторизацию</b>')
+        await message.reply('Вы еще не авторизованы. Для просмотра списка работ пройдите <b>Авторизацию</b>.')
         return
 
     # получение логина из БД по телеграм айди
@@ -217,15 +222,22 @@ async def view_all_works_command(message: Message):
     await message.reply(msg)
 
 
-# нажатие кнопки "Настройка уведомлений"
-@notif_router.message(F.text == 'Настройка уведомлений')
-async def notifications_settings_command(message: Message, state: FSMContext):
+# нажатие кнопки "Посмотреть зачетку"
+@grades_router.message(F.text == 'Посмотреть зачетку')
+async def view_all_grades(message: Message, state: FSMContext):
     if not database.is_user_authorized(message.from_user.id):
-        await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>',
-                            parse_mode='HTML')
+        await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')
         return
 
-    # если пользователь уже подписан на уведомления
+
+# нажатие кнопки "Настройки"
+@settings_router.message(F.text == 'Настройки')
+async def notifications_settings_command(message: Message, state: FSMContext):
+    if not database.is_user_authorized(message.from_user.id):
+        await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')
+        return
+
+    # если пользователь уже подписан на уведомления или нет
     if database.is_user_subscribed(message.from_user.id):
         btn_switch_notif = InlineKeyboardButton(text='❌ Выключить уведомления', callback_data='btn_cancel_notif')
     else:
@@ -239,11 +251,11 @@ async def notifications_settings_command(message: Message, state: FSMContext):
 
     await message.reply('Выберите действие:', reply_markup=builder.as_markup(resize_keyboard=True))
 
-    await state.set_state(States.notif_menu.waiting_for_choice)
+    await state.set_state(States.settings_menu.waiting_for_choice)
 
 
 # нажата кнопка '✅ Включить уведомления' в меню уведомлений
-@notif_router.callback_query(States.notif_menu.waiting_for_choice, F.data == 'btn_return_notif')
+@settings_router.callback_query(States.settings_menu.waiting_for_choice, F.data == 'btn_return_notif')
 async def btn_return_notif_pressed(query: CallbackQuery, state: FSMContext):
     # удалить сообщение с меню
     await query.message.delete()
@@ -269,7 +281,7 @@ async def btn_return_notif_pressed(query: CallbackQuery, state: FSMContext):
 
 
 # нажата кнопка '❌ Выключить уведомления' в меню уведомлений
-@notif_router.callback_query(States.notif_menu.waiting_for_choice, F.data == 'btn_cancel_notif')
+@settings_router.callback_query(States.settings_menu.waiting_for_choice, F.data == 'btn_cancel_notif')
 async def btn_cancel_notif_pressed(query: CallbackQuery, state: FSMContext):
     # выключить подписку
     database.change_user_notification_subscribe(query.from_user.id, False)
@@ -281,7 +293,7 @@ async def btn_cancel_notif_pressed(query: CallbackQuery, state: FSMContext):
 
 
 # нажата кнопка 'Выход' в меню уведомлений
-@notif_router.callback_query(States.notif_menu.waiting_for_choice, F.data == 'btn_exit_notif_menu')
+@settings_router.callback_query(States.settings_menu.waiting_for_choice, F.data == 'btn_exit_notif_menu')
 async def btn_exit_notif_menu_pressed(query: CallbackQuery, state: FSMContext):
     await query.message.delete()
     await query.message.answer('Вы вышли из меню.')
