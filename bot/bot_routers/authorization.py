@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, InlineKeyboardButton, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-import database
+import database.get, database.delete, database.update, database.other
 import encryption
 import html_parser
 from logger import logging
@@ -30,7 +30,7 @@ class States(StatesGroup):
 @router.message(F.text == 'Авторизация')
 async def authorization_command(message: Message, state: FSMContext):
     # если пользователь уже авторизован ###########################################
-    if database.is_user_authorized(message.from_user.id):
+    if database.other.is_user_authorized(message.from_user.id):
         # создание клавиатуры под сообщением
         btn_yes = InlineKeyboardButton(text='✅ Да', callback_data='btn_change_account')
         btn_no = InlineKeyboardButton(text='❌ Нет', callback_data='btn_decline_change_account')
@@ -38,7 +38,7 @@ async def authorization_command(message: Message, state: FSMContext):
         builder = InlineKeyboardBuilder()
         builder.row(btn_yes, btn_no)
 
-        await message.reply(f'Вы уже авторизованы под логином "{database.get_user_login(message.from_user.id)}". '
+        await message.reply(f'Вы уже авторизованы под логином "{database.get.get_user_login(message.from_user.id)}". '
                             f'Хотите <b>изменить</b> аккаунт?', reply_markup=builder.as_markup())
         # переход в ожидание нажатия кнопки
         await state.set_state(States.waiting_for_change_acc_answer)
@@ -108,22 +108,22 @@ async def authorization_handler(message: Message, state: FSMContext):
         return
 
     # если пользователь уже был авторизован и меняет аккаунт, удаление старых работ из БД
-    if database.is_user_authorized(message.from_user.id):
-        login = database.get_user_login(message.from_user.id)
-        database.delete_all_student_works(login)
+    if database.other.is_user_authorized(message.from_user.id):
+        login = database.get.get_user_login(message.from_user.id)
+        database.delete.delete_all_student_works(login)
 
     # кодирование пароля перед занесением в БД
     encrypted_password = encryption.encrypt(password)
 
     # добавление/обновление пользователя в БД
-    database.update_user_in_db(message.from_user.id, login, encrypted_password)
+    database.update.update_user_in_db(message.from_user.id, login, encrypted_password)
 
     warning_works_message = await message.answer('Успешно. Собираем информацию о работах с сайта. Процесс может '
                                                  'занять около 3 минут.......')
 
     # добавление/обновление работ в БД
     all_works = html_parser.get_new_student_works(session)
-    database.update_student_works(all_works, login)
+    database.update.update_student_works(all_works, login)
 
     await warning_works_message.delete()
 

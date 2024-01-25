@@ -1,10 +1,11 @@
 from aiogram import Router, F
-from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from logger import logging
 import database
+import database.get, database.update, database.delete, database.other
+
 
 # рутер для подключения в основном файле
 router = Router()
@@ -21,7 +22,7 @@ TERM_COUNT = 8
 # нажатие кнопки "Посмотреть зачетку"
 @router.message(F.text == 'Посмотреть зачетку')
 async def view_all_grades(message: Message):
-    if not database.is_user_authorized(message.from_user.id):
+    if not database.other.is_user_authorized(message.from_user.id):
         await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')
         return
 
@@ -36,9 +37,9 @@ async def view_all_grades(message: Message):
     builder.row(btn_exit)
 
     # семестр, выбранный пользователем
-    users_term = database.get_user_term(message.from_user.id)
+    users_term = database.get.get_user_term(message.from_user.id)
 
-    grades_info_list = database.get_user_grades(user_id=message.from_user.id, term=users_term)
+    grades_info_list = database.get.get_user_grades(user_id=message.from_user.id, term=users_term)
 
     msg = (f'<b>Оценки в {users_term} семестре:</b>\n'
            f'\n')

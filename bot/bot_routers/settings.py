@@ -6,7 +6,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import user_functions
 from logger import logging
-import database
+import database.get, database.update, database.delete, database.other
+
 
 # рутер для подключения в основном файле
 router = Router()
@@ -25,12 +26,12 @@ class States(StatesGroup):
 # нажатие кнопки "Настройки"
 @router.message(F.text == 'Настройки')
 async def notifications_settings_command(message: Message, state: FSMContext):
-    if not database.is_user_authorized(message.from_user.id):
+    if not database.other.is_user_authorized(message.from_user.id):
         await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')
         return
 
     # если пользователь уже подписан на уведомления
-    if database.is_user_subscribed(message.from_user.id):
+    if database.other.is_user_subscribed(message.from_user.id):
         btn_switch_notif = InlineKeyboardButton(text='❌ Выключить уведомления', callback_data='btn_cancel_notif')
     else:
         btn_switch_notif = InlineKeyboardButton(text='✅ Включить уведомления', callback_data='btn_return_notif')
@@ -58,7 +59,7 @@ async def btn_return_notif_pressed(query: CallbackQuery, state: FSMContext):
     logging.info(f'Выполняется обновление работ для "{query.from_user.id}"...')
 
     # обновить список работ перед включением подписки
-    user_functions.update_all_user_works_list(database.get_user_login(query.from_user.id))
+    user_functions.update_all_user_works_list(database.get.get_user_login(query.from_user.id))
 
     # включить подписку
     user_functions.change_user_notification_subscribe(query.from_user.id, True)
@@ -76,7 +77,7 @@ async def btn_return_notif_pressed(query: CallbackQuery, state: FSMContext):
 @router.callback_query(States.waiting_for_choice, F.data == 'btn_cancel_notif')
 async def btn_cancel_notif_pressed(query: CallbackQuery, state: FSMContext):
     # выключить подписку
-    database.change_user_notification_subscribe(query.from_user.id, False)
+    database.update.update_user_notification_subscribe(query.from_user.id, False)
 
     await query.message.delete()
     await query.message.answer('Уведомления больше не будут приходить.')

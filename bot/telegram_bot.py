@@ -2,7 +2,7 @@ import asyncio
 import os
 import time
 
-from aiogram import Bot, Dispatcher, Router
+from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message, KeyboardButton, ErrorEvent
@@ -12,6 +12,7 @@ import WorkInfo
 import database
 import html_parser
 import user_functions
+import database.get, database.delete, database.update, database.other
 from bot_routers import authorization, view_works, grades, settings
 from logger import logging
 
@@ -89,8 +90,8 @@ async def send_notifications_periodically():
             # для каждого человека из списка проверить изменения
             for user_id in senders_id_list:
                 # получить логин и пароль пользователя
-                login = database.get_user_login(user_id)
-                password = database.get_user_password(user_id)
+                login = database.get.get_user_login(user_id)
+                password = database.get.get_user_password(user_id=user_id)
 
                 # получить сессию с авторизованным пользователем
                 session = html_parser.authorize(login, password)
@@ -99,7 +100,7 @@ async def send_notifications_periodically():
                 updated_works = user_functions.get_updated_student_works(login, password, session)
 
                 # после получения работ, обновить базу со всеми работами пользователя
-                database.update_student_works(updated_works, login)
+                database.update.update_student_works(updated_works, login)
 
                 # список работ у которых ТОЛЬКО обновился статус (не их появление)
                 updated_status_works = user_functions.get_updated_status_works(updated_works=updated_works)
