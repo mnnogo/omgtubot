@@ -99,7 +99,7 @@ async def send_notifications_periodically():
                 updated_works = user_functions.get_updated_student_works(login, password, session)
 
                 # после получения работ, обновить базу со всеми работами пользователя
-                database.update_student_works_db(updated_works, login)
+                database.update_student_works(updated_works, login)
 
                 # список работ у которых ТОЛЬКО обновился статус (не их появление)
                 updated_status_works = user_functions.get_updated_status_works(updated_works=updated_works)
@@ -162,7 +162,7 @@ async def run_bot():
     # # предотвращение выключения бота
     # background.keep_alive()
     #
-    # # запуск периодической проверки на уведомления
+    # # запуск периодических уведомлений
     # asyncio.ensure_future(send_notifications_periodically())
 
     logging.debug('Попытка запустить бота...')

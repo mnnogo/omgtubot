@@ -81,8 +81,8 @@ async def wait_for_password(message: Message, state: FSMContext):
 # обработка логина и пароля после их ввода
 @router.message(States.waiting_for_password)
 async def authorization_handler(message: Message, state: FSMContext):
-    warning_message = await message.answer('Выполняется проверка на корректность данных. Процесс может занять около '
-                                           'минуты...')
+    warning_data_message = await message.answer('Выполняется проверка на корректность данных. Процесс может занять '
+                                                'около минуты...')
     _data = await state.get_data()
 
     login = _data.get('login')
@@ -95,7 +95,7 @@ async def authorization_handler(message: Message, state: FSMContext):
     # попытка зайти в аккаунт
     session = html_parser.authorize(login, password)
 
-    await warning_message.delete()
+    await warning_data_message.delete()
 
     if session == 1:
         await message.answer('Ошибка при подключении к сайту. Попробуйте позже')
@@ -107,8 +107,6 @@ async def authorization_handler(message: Message, state: FSMContext):
         await state.clear()
         return
 
-    await message.answer('Успешно. Анализируем информацию с сайта. Процесс может занять около 3 минут.......')
-
     # если пользователь уже был авторизован и меняет аккаунт, удаление старых работ из БД
     if database.is_user_authorized(message.from_user.id):
         login = database.get_user_login(message.from_user.id)
@@ -119,9 +117,19 @@ async def authorization_handler(message: Message, state: FSMContext):
 
     # добавление/обновление пользователя в БД
     database.update_user_in_db(message.from_user.id, login, encrypted_password)
+
+    warning_works_message = await message.answer('Успешно. Собираем информацию о работах с сайта. Процесс может '
+                                                 'занять около 3 минут.......')
+
     # добавление/обновление работ в БД
     all_works = html_parser.get_new_student_works(session)
-    database.update_student_works_db(all_works, login)
+    database.update_student_works(all_works, login)
+
+    await warning_works_message.delete()
+
+    warning_grades_message = await message.answer('Успешно. Собираем информацию об оценках с сайта. Процесс может '
+                                                  'занять около (?)')
+    # TODO
 
     i = 1
     msg = 'Успешно. При изменении статуса работ Вам придет уведомление.\n' \

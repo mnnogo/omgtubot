@@ -46,7 +46,7 @@ def get_updated_student_works(login: str, password: str = None, session: request
     return updated_student_info
 
 
-def get_updated_status_works(login: str = None, updated_works: list[WorkInfo] = None) -> list[WorkInfo]:
+def get_updated_status_works(*, login: str = None, updated_works: list[WorkInfo] = None) -> list[WorkInfo]:
     r"""Requires at least one parameter. Gets updated works ONLY that have changed the status (new downloaded works
     excluded). By giving updated_works variable you reduce the running time of the program by about a minute.
 
@@ -72,4 +72,4 @@ def change_user_notification_subscribe(user_id: int, notification_subscribe: boo
 def update_all_user_works_list(login: str) -> None:
     r"""Updates ALL user works with new information"""
     updated_works = get_updated_student_works(login, database.get_user_password(login=login))
-    database.update_student_works_db(updated_works, login)
+    database.update_student_works(updated_works, login)

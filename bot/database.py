@@ -1,4 +1,5 @@
 from typing import Any
+from GradeInfo import *
 from logger import logging
 import pymysql
 import encryption
@@ -77,7 +78,7 @@ def get_old_student_works(login: str) -> list[WorkInfo]:
     return old_student_works
 
 
-def update_student_works_db(works: list[WorkInfo], login: str) -> None:
+def update_student_works(works: list[WorkInfo], login: str) -> None:
     r"""Updates works info in database. Creates new info, if work doesn't yet exist in database
 
     :param works: list of :class:`WorkInfo` objects with paramaters to be updated in database
@@ -124,7 +125,7 @@ def get_user_login(user_id: int) -> str | None:
     return result[0][0]
 
 
-def get_user_password(user_id: int = None, login: str = None) -> str:
+def get_user_password(*, user_id: int = None, login: str = None) -> str:
     r"""At least one parameter should be given. Most optimal way is to give 'user_id' variable.
     If both are given, only 'user_id' is used.
     :return: REAL user's password from omgtu account."""
@@ -166,3 +167,63 @@ def get_id_notification_subscribers() -> list[int]:
     result = make_sql_query('SELECT tg_id from user_info WHERE notifications = 1', ())
 
     return [result[i][0] for i in range(len(result))]
+
+
+def get_user_term(user_id: int) -> int:
+    result = make_sql_query('SELECT term from user_info WHERE tg_id = %s', (user_id, ))
+
+    return result[0][0]
+
+
+def set_user_term(user_id: int, term: int) -> None:
+    make_sql_query('UPDATE user_info SET term = %s WHERE tg_id = %s', (term, user_id))
+
+
+def get_user_grades(*, login: str = None, user_id: int = None, term: int = None) -> list[GradeInfo]:
+    r"""At least one parameter should be given. Most optimal way is to give 'login' variable.
+        If both are given, only 'login' is used.
+        Returns empty list if works doesn't exist"""
+    if login is None and user_id is None:
+        error_msg = 'Хотя бы один аргумент должен быть передан'
+        logging.exception(error_msg)
+        raise ValueError(error_msg)
+
+    if login is None:
+        login = get_user_login(user_id)
+
+    # нужно ли выбирать по семестру или абсолютно все работы
+    if term is None:
+        result = make_sql_query('SELECT subject, term, grade from old_grades WHERE login = %s', (login, ))
+    else:
+        result = make_sql_query('SELECT subject, term, grade from old_grades WHERE login = %s AND term = %s',
+                                (login, term))
+
+    user_grades = []
+
+    for subject, term, grade in result:
+        user_grades.append(GradeInfo(subject, term, Grade(grade)))
+
+    return user_grades
+
+
+def update_student_grades(grades_info: list[GradeInfo], login: str = None, user_id: int = None) -> None:
+    r"""At least one parameter should be given. Most optimal way is to give 'login' variable.
+    If both are given, only 'login' is used. Updates already existing works in database. If work doesn't exist,
+    adds new work"""
+    if login is None and user_id is None:
+        error_msg = 'Хотя бы один аргумент должен быть передан'
+        logging.exception(error_msg)
+        raise ValueError(error_msg)
+
+    if login is None:
+        login = get_user_login(user_id)
+
+    for grade_info in grades_info:
+        # удаление старой записи, если она существует
+        make_sql_query('DELETE from old_grades WHERE login = %s AND subject = %s AND term = %s',
+                       (login, grade_info.subject, grade_info.term))
+        # создание новой записи оценки в БД
+        make_sql_query('INSERT INTO old_grades(login, subject, term, grade) '
+                       'VALUES (%s, %s, %s, %s)',
+                       (login, grade_info.subject, grade_info.term, grade_info.grade.value))
+
