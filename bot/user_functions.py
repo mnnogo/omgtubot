@@ -29,7 +29,7 @@ def get_updated_student_works(login: str, password: str = None, session: request
 
     # если сессия не передана в функцию - создаем
     if session is None:
-        session = html_parser.authorize(login, password)
+        session = html_parser.main.authorize(login, password)
 
     # получение работ до проверки и после проверки
     old_student_info = database.get.get_student_works(login)

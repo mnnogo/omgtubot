@@ -6,7 +6,7 @@ from aiogram.types import Message, InlineKeyboardButton, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 import database.get, database.delete, database.update, database.other
 import encryption
-import html_parser
+import html_parser.main, html_parser.works
 from logger import logging
 
 
@@ -93,7 +93,7 @@ async def authorization_handler(message: Message, state: FSMContext):
     start_time = time.time()
 
     # попытка зайти в аккаунт
-    session = html_parser.authorize(login, password)
+    session = html_parser.main.authorize(login, password)
 
     await warning_data_message.delete()
 
@@ -116,13 +116,13 @@ async def authorization_handler(message: Message, state: FSMContext):
     encrypted_password = encryption.encrypt(password)
 
     # добавление/обновление пользователя в БД
-    database.update.update_user_in_db(message.from_user.id, login, encrypted_password)
+    database.update.update_user(message.from_user.id, login, encrypted_password)
 
     warning_works_message = await message.answer('Успешно. Собираем информацию о работах с сайта. Процесс может '
                                                  'занять около 3 минут.......')
 
     # добавление/обновление работ в БД
-    all_works = html_parser.get_new_student_works(session)
+    all_works = html_parser.works.get_student_works(session)
     database.update.update_student_works(all_works, login)
 
     await warning_works_message.delete()

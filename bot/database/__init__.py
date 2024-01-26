@@ -7,13 +7,13 @@ import pymysql
 logging = logging.getLogger(__name__)
 
 
-def make_sql_query(query: str, params: tuple) -> tuple[tuple[Any, ...], ...]:
-    r"""Makes an SQL query into database_.
+def make_sql_query(query: str, params: tuple = ()) -> tuple[tuple[Any, ...], ...]:
+    r"""Makes an SQL query into database.
     :return: data of SQL result
 
     :param query: SQL query with %s instead of variable parameters
-    :param params: tuple with parameters that should be instead of %s in the exact order (empty tuple if there's no
-                   variable parameters)"""
+    :param params: tuple with parameters that should be instead of %s in the exact order (tuple with one parameter
+    if there's only 1 parameter)"""
     try:
         connection = pymysql.connect(
             host='127.0.0.1',

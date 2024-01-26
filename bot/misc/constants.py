@@ -1,0 +1,1 @@
+TERM_COUNT = 8

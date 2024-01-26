@@ -1,9 +1,6 @@
 import asyncio
-import os
 import time
 
-from aiogram import Bot, Dispatcher
-from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message, KeyboardButton, ErrorEvent
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
@@ -11,65 +8,59 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 import WorkInfo
 import database
 import html_parser
+import misc.env
 import user_functions
 import database.get, database.delete, database.update, database.other
-from bot_routers import authorization, view_works, grades, settings
+from bot_routers import authorization, view_works, grades, settings, mailing
 from logger import logging
+
+from misc.bot_init import bot, dp
 
 # конфигурация логгинга
 logging = logging.getLogger(__name__)
 
 
-# создание бота
-TOKEN = os.getenv('TELEGRAM_API_TOKEN')
-bot = Bot(token=TOKEN, parse_mode=ParseMode.HTML)
-dp = Dispatcher()
-
-
 # подключение рутеров из файлов (разбито по каждой кнопке)
-dp.include_routers(authorization.router, view_works.router, grades.router, settings.router)
-
-
-# id разработчика для уведомлений
-DEVELOPER_CHAT_ID = os.getenv('TELEGRAM_ID')
+dp.include_routers(authorization.router, view_works.router, grades.router, settings.router, mailing.router)
 
 
 # команда /start
 @dp.message(CommandStart())
 async def start_command(message: Message):
-    msg = 'Привет! Этот бот позволяет отслеживать обновления статуса работ в загрузке отчетных работ на сайте ОмГТУ.\n' \
+    msg = 'Привет! Этот бот позволяет отслеживать обновления статуса работ в отчетных работах и оценок на сайте ОмГТУ.\n' \
           '\n' \
           'Для начала работы нажмите кнопку <b>"Авторизация"</b>.\n' \
           'При авторизации все введенные пароли хранятся в закодированном виде.\n' \
-          'Для настройки уведомлений нажмите <b>"Настройка уведомлений"</b>\n' \
+          'Для настройки уведомлений или изменения семестра нажмите <b>"Настройки"</b>\n' \
           '\n' \
-          'При изменении статуса работы бот пришлет Вам уведомление. Проверка происходит раз в 2 часа. ' \
-          'Если вами была выложена новая работа, то о её появлении не придет уведомление ' \
-          '(в будущем будет настраиваемо)\n' \
+          'При изменении статуса работы или оценки за <b>текущий семестр</b> бот пришлет Вам уведомление. ' \
+          'Текущий семестр указывается пользователем при авторизации. Проверка происходит раз в 2 часа. ' \
+          'Если вами была удалена или выложена новая работа, то об этом не придет уведомление\n' \
           '\n' \
-          'При исчезновении кнопок напишите /start еще раз.\n' \
+          'Каждые 31 января и 31 августа происходит изменение текущего семестра на +1. Семестр влияет только на ' \
+          'уведомления об оценках.\n' \
+          '\n' \
+          '<b>При исчезновении кнопок напишите /start еще раз.</b>\n' \
           '\n' \
           'В будущем возможности бота вероятно будут расширяться.\n' \
-          'При возникновении ошибки пишите в ТГ.\n' \
+          'При возникновении проблем пишите в ТГ.\n' \
           '\n' \
           'Исходный код: https://github.com/Mnogchik/omgtubot/tree/master\n' \
           'Telegram: t.me/Mnogo1234'
 
-    # шаблоны кнопок на главном экране
-    btn_auth = KeyboardButton(text='Авторизация')
-    btn_works_list = KeyboardButton(text='Посмотреть список работ')
-    btn_grades_list = KeyboardButton(text='Посмотреть зачетку')
-    btn_notif_settings = KeyboardButton(text='Настройки')
-
-    # добавление кнопок на клавиатуру
+    # добавление клавиатуры
     builder = ReplyKeyboardBuilder()
-    builder.row(btn_auth)
-    builder.row(btn_works_list)
-    builder.row(btn_grades_list)
-    builder.row(btn_notif_settings)
+    builder.row(KeyboardButton(text='Авторизация'))
+    builder.row(KeyboardButton(text='Посмотреть список работ'))
+    builder.row(KeyboardButton(text='Посмотреть зачетку'))
+    builder.row(KeyboardButton(text='Настройки'))
 
-    # отправка приветствия + добавление клавиатуры
-    await message.reply(msg, reply_markup=builder.as_markup(resize_keyboard=True))
+    # админские кнопки
+    if message.from_user.id == misc.env.DEVELOPER_CHAT_ID:
+        builder.row(KeyboardButton(text='Сделать рассылку'))
+
+    # отправка приветствия + добавление основной клавиатуры
+    await message.reply(text=msg, reply_markup=builder.as_markup(resize_keyboard=True))
 
 
 # функция, отвечающая за проверку и отправку уведомлений (неоптимизирована по нагрузке, изменить при лагах)
@@ -94,7 +85,7 @@ async def send_notifications_periodically():
                 password = database.get.get_user_password(user_id=user_id)
 
                 # получить сессию с авторизованным пользователем
-                session = html_parser.authorize(login, password)
+                session = html_parser.main.authorize(login, password)
 
                 # получить список работ, которые изменились
                 updated_works = user_functions.get_updated_student_works(login, password, session)
@@ -156,7 +147,7 @@ async def errors_handler(event: ErrorEvent):
 
 # функция для уведомления разработчика о возникновении крит. ошибки
 async def notify_developer(exception_text: str):
-    await bot.send_message(DEVELOPER_CHAT_ID, f"Возникла критическая ошибка: {exception_text}")
+    await bot.send_message(misc.env.DEVELOPER_CHAT_ID, f"Возникла критическая ошибка: {exception_text}")
 
 
 async def run_bot():

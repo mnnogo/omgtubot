@@ -50,7 +50,7 @@ def get_user_password(*, user_id: int = None, login: str = None) -> str:
 
     if user_id is None:
         # попытка получить user_id по логину
-        user_id = user_id(login)
+        user_id = get_user_id(login)
         if user_id is None:
             error_msg = f'Пользователя с логином "{login}" нет в базе данных.'
             logging.exception(error_msg)
@@ -108,3 +108,14 @@ def get_user_grades(*, login: str = None, user_id: int = None, term: int = None)
         user_grades.append(GradeInfo(subject, term, Grade(grade)))
 
     return user_grades
+
+
+def get_users_list() -> list[int]:
+    result_tuples = make_sql_query('SELECT tg_id from user_info')
+
+    result = []
+
+    for _tuple in result_tuples:
+        result.append(_tuple[0])
+
+    return result
