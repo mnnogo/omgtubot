@@ -9,19 +9,18 @@ from logger import logging
 logging = logging.getLogger(__name__)
 
 
-def get_student_works(login: str = None, user_id: int = None) -> list[WorkInfo]:
-    r"""At least one parameter should be given. Most optimal way is to give 'login' variable.
-        If both are given, only 'login' is used. Returns empty list if works doesn't exist"""
+def get_student_works(*, login: str = None, user_id: int = None) -> list[WorkInfo]:
+    r"""At least one parameter should be given.
+    If both are given, only 'login' is used. Returns empty list if works doesn't exist"""
     if login is None and user_id is None:
         error_msg = 'Хотя бы один аргумент должен быть передан'
         logging.exception(error_msg)
         raise ValueError(error_msg)
 
-    if login is None:
-        login = get_user_login(user_id)
-
-    # извлечение из БД всех работ по логину
-    result = make_sql_query('SELECT work_name, subject, status FROM old_works WHERE login = %s', (login,))
+    # извлечение из БД всех работ (при None не ломается)
+    result = make_sql_query('SELECT work_name, subject, status FROM old_works JOIN user_info '
+                            'ON old_works.login = user_info.login '
+                            'WHERE user_info.login = %s OR user_info.tg_id = %s', (login, user_id))
 
     student_works = []
 
@@ -53,15 +52,15 @@ def get_user_password(*, user_id: int = None, login: str = None) -> str:
         logging.exception(error_msg)
         raise ValueError(error_msg)
 
-    if user_id is None:
-        # попытка получить user_id по логину
-        user_id = get_user_id(login)
-        if user_id is None:
-            error_msg = f'Пользователя с логином "{login}" нет в базе данных.'
-            logging.exception(error_msg)
-            raise ValueError(error_msg)
+    result = make_sql_query('SELECT password FROM user_info WHERE tg_id = %s OR login = %s',
+                            (user_id, login))
 
-    encrypted_password = make_sql_query('SELECT password FROM user_info WHERE tg_id = %s', (user_id,))[0][0]
+    if len(result) == 0:
+        error_msg = f'Пользователя {login or user_id} нет в базе данных'
+        logging.exception(error_msg)
+        raise ValueError(error_msg)
+
+    encrypted_password = result[0][0]
 
     return encryption.decrypt(encrypted_password)
 
@@ -78,13 +77,13 @@ def get_user_id(login: str) -> int | None:
 
 def get_notification_subscribers_id() -> list[int]:
     r"""Gets all telegram ID of users, whose 'notification' field is 1 (True) in database"""
-    result = make_sql_query('SELECT tg_id from user_info WHERE notifications = 1', ())
+    result = make_sql_query('SELECT tg_id FROM user_info WHERE notifications = 1', ())
 
     return [result[i][0] for i in range(len(result))]
 
 
-def get_user_term(user_id: int) -> int:
-    result = make_sql_query('SELECT term from user_info WHERE tg_id = %s', (user_id,))
+def get_user_term(user_id: int, login: str) -> int:
+    result = make_sql_query('SELECT term FROM user_info WHERE tg_id = %s OR login = %s', (user_id, login))
 
     return result[0][0]
 
@@ -110,30 +109,32 @@ def get_user_max_term(*, user_id: int = None, login: str = None, based_on_works:
     if based_on_works:
         result = make_sql_query('SELECT MAX(term) FROM old_grades WHERE login = %s', (login,))
     else:
-        result = make_sql_query('SELECT max_term from user_info WHERE tg_id = %s', (user_id,))
+        result = make_sql_query('SELECT max_term FROM user_info WHERE tg_id = %s', (user_id,))
 
     return result[0][0]
 
 
 def get_user_grades(*, login: str = None, user_id: int = None, term: int = None) -> list[GradeInfo]:
-    r"""At least one parameter should be given. Most optimal way is to give 'login' variable.
-        If both are given, only 'login' is used. Returns empty list if works doesn't exist"""
+    r"""At least one parameter should be given. Returns empty list if works doesn't exist"""
     if login is None and user_id is None:
         error_msg = 'Хотя бы один аргумент должен быть передан'
         logging.exception(error_msg)
         raise ValueError(error_msg)
 
-    if login is None:
-        login = get_user_login(user_id)
-
     # нужно ли выбирать по семестру или абсолютно все работы
     if term is None:
         result = make_sql_query(
-            'SELECT subject, term, control_rating, grade_type, grade from old_grades WHERE login = %s', (login,))
+            'SELECT subject, old_grades.term, control_rating, grade_type, grade FROM old_grades JOIN user_info '
+            'ON old_grades.login = user_info.login WHERE user_info.login = %s OR user_info.tg_id = %s',
+            (login, user_id)
+        )
     else:
         result = make_sql_query(
-            'SELECT subject, term, control_rating, grade_type, grade from old_grades WHERE login = %s AND term = %s',
-            (login, term))
+            'SELECT subject, old_grades.term, control_rating, grade_type, grade FROM old_grades JOIN user_info '
+            'ON old_grades.login = user_info.login WHERE (user_info.login = %s OR user_info.tg_id = %s) '
+            'AND old_grades.term = %s',
+            (login, user_id, term)
+        )
 
     user_grades = []
 
@@ -144,7 +145,7 @@ def get_user_grades(*, login: str = None, user_id: int = None, term: int = None)
 
 
 def get_users_list() -> list[int]:
-    result_tuples = make_sql_query('SELECT tg_id from user_info')
+    result_tuples = make_sql_query('SELECT tg_id FROM user_info')
 
     result = []
 
