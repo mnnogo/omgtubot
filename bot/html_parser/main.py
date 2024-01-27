@@ -1,3 +1,5 @@
+import time
+
 import requests
 import urllib3
 from logger import logging
@@ -14,6 +16,9 @@ urllib3.disable_warnings()
 def authorize(login: str, password: str) -> requests.Session | int:
     r""":return: :class:`Session` object with authorized user, or 1 - if there's connection error,
     2 - if there's mistake in login or password"""
+    start_time = time.time()
+    logging.debug(f'Началась авторизация пользователя "{login}"')
+
     # ссылка на авторизацию пользователя
     login_url = 'https://www.omgtu.ru/ecab/index.php?login=yes'
 
@@ -37,5 +42,8 @@ def authorize(login: str, password: str) -> requests.Session | int:
         # строка есть на сайте, только если вход был выполнен
         if 'Вы зарегистрированы в электронном кабинете как' not in response.text:
             return 2
+
+        end_time = time.time()
+        logging.debug(f'Завершено за время {end_time - start_time}.')
 
         return session

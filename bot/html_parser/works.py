@@ -1,4 +1,6 @@
 import re
+import time
+
 import requests
 from bs4 import BeautifulSoup
 from WorkInfo import *
@@ -13,6 +15,9 @@ def get_student_works(session: requests.Session) -> list[WorkInfo]:
     r"""Returns :class:`WorkInfo` list of ALL current works from site
 
     :param session: :class:`Session` object with authorized user"""
+    start_time = time.time()
+    logging.debug('Начался запрос к работам...')
+
     student_works = []
 
     # ссылка на GET запрос ко всем работам
@@ -20,7 +25,7 @@ def get_student_works(session: requests.Session) -> list[WorkInfo]:
 
     response = session.get(data_url, verify=False)
     if response.status_code != 200:
-        error_msg = 'Ошибка соединения с сайтом'
+        error_msg = f'Ошибка соединения с сайтом {response.url}'
         logging.exception(error_msg)
         raise ConnectionError(error_msg)
 
@@ -50,4 +55,6 @@ def get_student_works(session: requests.Session) -> list[WorkInfo]:
 
         student_works.append(WorkInfo(work_name, subject, status))
 
+    end_time = time.time()
+    logging.debug(f'Запрос завершился за {end_time - start_time}')
     return student_works
