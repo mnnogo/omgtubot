@@ -56,7 +56,10 @@ def get_updated_student_works(login: str, password: str = None, session: request
     return updated_student_info
 
 
-def get_updated_student_works_by_comparing(old_works: list[WorkInfo], new_works: list[WorkInfo]) -> list[WorkInfo]:
+def get_updated_student_works_by_comparing(
+        old_works: list[WorkInfo],
+        new_works: list[WorkInfo]) -> list[WorkInfo]:
+
     updated_student_info = []
 
     for workInfo in new_works:
@@ -135,7 +138,10 @@ def get_updated_student_grades(login: str, password: str = None, session: reques
     return updated_student_info
 
 
-def get_updated_student_grades_by_comparing(old_grades: list[GradeInfo], new_grades: list[GradeInfo]) -> list[GradeInfo]:
+def get_updated_student_grades_by_comparing(
+        old_grades: list[GradeInfo],
+        new_grades: list[GradeInfo]) -> list[GradeInfo]:
+
     updated_student_info = []
 
     for workInfo in new_grades:

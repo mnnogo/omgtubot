@@ -130,18 +130,27 @@ async def authorization_handler(message: Message, state: FSMContext):
     end_time = time.time()
     logging.info(f'Авторизация закончилась. Затраченное время: {end_time - start_time}')
 
+    is_user_subscribed = True
     # если пользователь уже был авторизован и меняет аккаунт, удаление старых работ и оценок из БД
     if database.other.is_user_authorized(message.from_user.id):
         login = database.get.get_user_login(message.from_user.id)
         database.delete.delete_all_student_works(login)
         database.delete.delete_all_student_grades(login)
-        # взять
+
+        # взять из БД статус подписки и не изменять его
+        is_user_subscribed = database.other.is_user_subscribed(message.from_user.id)
 
     # кодирование пароля перед занесением в БД
     encrypted_password = encryption.encrypt(password)
 
     # добавление/обновление пользователя в БД
-    database.update.update_user(message.from_user.id, login, encrypted_password, term=selected_term)
+    database.update.update_user(
+        user_id=message.from_user.id,
+        login=login,
+        password=encrypted_password,
+        notification_subscribe=is_user_subscribed,
+        term=selected_term
+    )
 
     warning_works_message = await message.answer('Успешно. Собираем информацию о работах с сайта. Процесс может '
                                                  'занять около 3 минут.......')
@@ -163,7 +172,12 @@ async def authorization_handler(message: Message, state: FSMContext):
     database.update.update_user_max_term(message.from_user.id, max_term)
 
     await warning_grades_message.delete()
-    await message.answer('Успешно. При изменении статуса работ или оценок Вам придет уведомление.\n'
+
+    msg = 'Успешно. При изменении статуса работ или оценок Вам придет уведомление.\n' if is_user_subscribed else \
+          'Успешно. У вас выключены уведомления, поэтому уведомления не будут приходить. ' \
+          'Это можно изменить в <b>настройках</b>\n'
+
+    await message.answer(msg +
                          '\n'
                          'Можете сверить информацию, нажав на <b>"Посмотреть список работ"</b> и '
                          '<b>"Посмотреть зачетку"</b>.\n')

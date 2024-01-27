@@ -22,7 +22,7 @@ logging = logging.getLogger(__name__)
 
 class States(StatesGroup):
     r"""Stores which stage of the dialogue the client is at"""
-    waiting_for_term = State()
+    waiting_for_changed_term = State()
 
 
 # нажатие кнопки "Настройки"
@@ -93,14 +93,14 @@ async def btn_change_term_pressed(query: CallbackQuery, state: FSMContext):
     await query.message.answer(text='Введите новое значение:\n'
                                     '<i>(значение семестра автоматически вырастает на единицу 31 января '
                                     'и 31 августа)</i>')
-    await state.set_state(States.waiting_for_term)
+    await state.set_state(States.waiting_for_changed_term)
 
 
 # введено число нового семестра
-@router.message(States.waiting_for_term)
+@router.message(States.waiting_for_changed_term)
 async def new_term_sent(message: Message, state: FSMContext):
-    if (not message.text.isdigit() or
-            int(message.text) < 1 or int(message.text) > database.get.get_user_max_term(user_id=message.from_user.id)):
+    if not message.text.isdigit() or \
+            not (1 <= int(message.text) <= database.get.get_user_max_term(user_id=message.from_user.id)):
         await message.reply(text='Некорректное число. Попробуйте еще раз:')
         return
 

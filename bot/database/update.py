@@ -21,9 +21,10 @@ def update_user(user_id: int, login: str, password: str, notification_subscribe:
     :param password: user's password on omgtu site (preferably encrypted)
     :param notification_subscribe: defines if user will get notifications about work status and grades changes"""
     make_sql_query('INSERT INTO user_info(tg_id, login, password, notifications, term, max_term) '
-                   'VALUES (%s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE login = %s, password = %s',
+                   'VALUES (%s, %s, %s, %s, %s, %s) '
+                   'ON DUPLICATE KEY UPDATE login = %s, password = %s, notifications = %s, term = %s, max_term = %s',
                    (user_id, login, password, notification_subscribe, term, max_term,
-                    login, password))
+                    login, password, notification_subscribe, term, max_term))
 
 
 def update_student_works(works: list[WorkInfo], login: str) -> None:
