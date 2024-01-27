@@ -5,16 +5,21 @@ from GradeInfo import *
 from WorkInfo import *
 from logger import logging
 
-
 # конфигурация логгинга
 logging = logging.getLogger(__name__)
 
 
-def get_student_works(login: str) -> list[WorkInfo]:
-    r"""Gets all user's works from database based on login.
-    :param login: user login on omgtu site
+def get_student_works(login: str = None, user_id: int = None) -> list[WorkInfo]:
+    r"""At least one parameter should be given. Most optimal way is to give 'login' variable.
+        If both are given, only 'login' is used. Returns empty list if works doesn't exist"""
+    if login is None and user_id is None:
+        error_msg = 'Хотя бы один аргумент должен быть передан'
+        logging.exception(error_msg)
+        raise ValueError(error_msg)
 
-    :return: :class:`WorkInfo` list"""
+    if login is None:
+        login = get_user_login(user_id)
+
     # извлечение из БД всех работ по логину
     result = make_sql_query('SELECT work_name, subject, status FROM old_works WHERE login = %s', (login,))
 
@@ -72,7 +77,7 @@ def get_user_id(login: str) -> int | None:
 
 
 def get_notification_subscribers_id() -> list[int]:
-    r"""Gets all telegram ID of users, whose 'notification' field is 1 (True) in database_"""
+    r"""Gets all telegram ID of users, whose 'notification' field is 1 (True) in database"""
     result = make_sql_query('SELECT tg_id from user_info WHERE notifications = 1', ())
 
     return [result[i][0] for i in range(len(result))]
@@ -80,6 +85,32 @@ def get_notification_subscribers_id() -> list[int]:
 
 def get_user_term(user_id: int) -> int:
     result = make_sql_query('SELECT term from user_info WHERE tg_id = %s', (user_id,))
+
+    return result[0][0]
+
+
+def get_user_max_term(*, user_id: int = None, login: str = None, based_on_works: bool = False) -> int:
+    r"""
+    :param login: omgtu login
+    :param user_id: telegram user id
+    :param based_on_works: set it to True if max_term in table user_info is still not set to correct value. Then
+    it will check max term of all grades in old_grade table
+    """
+    if user_id is None and login is None:
+        error_msg = 'Хотя бы один аргумент должен быть передан'
+        logging.exception(error_msg)
+        raise ValueError(error_msg)
+
+    if user_id is None and not based_on_works:
+        user_id = get_user_id(login)
+
+    if login is None and based_on_works:
+        login = get_user_login(user_id)
+
+    if based_on_works:
+        result = make_sql_query('SELECT MAX(term) FROM old_grades WHERE login = %s', (login,))
+    else:
+        result = make_sql_query('SELECT max_term from user_info WHERE tg_id = %s', (user_id,))
 
     return result[0][0]
 
@@ -97,15 +128,17 @@ def get_user_grades(*, login: str = None, user_id: int = None, term: int = None)
 
     # нужно ли выбирать по семестру или абсолютно все работы
     if term is None:
-        result = make_sql_query('SELECT subject, term, grade from old_grades WHERE login = %s', (login, ))
+        result = make_sql_query(
+            'SELECT subject, term, control_rating, grade_type, grade from old_grades WHERE login = %s', (login,))
     else:
-        result = make_sql_query('SELECT subject, term, grade from old_grades WHERE login = %s AND term = %s',
-                                (login, term))
+        result = make_sql_query(
+            'SELECT subject, term, control_rating, grade_type, grade from old_grades WHERE login = %s AND term = %s',
+            (login, term))
 
     user_grades = []
 
-    for subject, term, grade in result:
-        user_grades.append(GradeInfo(subject, term, Grade(grade)))
+    for subject, term, control_rating, grade_type, grade in result:
+        user_grades.append(GradeInfo(subject, term, control_rating, grade_type, Grade(grade)))
 
     return user_grades
 

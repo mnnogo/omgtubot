@@ -1,8 +1,12 @@
 import requests
 
 import database
-import database.get, database.update
-import html_parser
+import database.get
+import database.update
+import html_parser.grades
+import html_parser.main
+import html_parser.works
+from GradeInfo import *
 from WorkInfo import *
 from logger import logging
 
@@ -12,7 +16,7 @@ logging = logging.getLogger(__name__)
 
 def get_notification_senders_list() -> list[int]:
     r""":return: users' telegram ID list of users, who should get notification"""
-    return database.get.get_id_notification_subscribers()
+    return database.get.get_notification_subscribers_id()
 
 
 def get_updated_student_works(login: str, password: str = None, session: requests.Session = None) -> list[WorkInfo]:
@@ -22,6 +26,8 @@ def get_updated_student_works(login: str, password: str = None, session: request
     :param session: :class:`Session` object with authorized user (optional)
 
     :return: list of :class:`WorkInfo` objects of works that were changed since last check"""
+    should_close_session = False
+
     updated_student_info = []
 
     if password is None:
@@ -29,11 +35,12 @@ def get_updated_student_works(login: str, password: str = None, session: request
 
     # если сессия не передана в функцию - создаем
     if session is None:
+        should_close_session = True
         session = html_parser.main.authorize(login, password)
 
     # получение работ до проверки и после проверки
-    old_student_info = database.get.get_student_works(login)
-    new_student_info = html_parser.get_new_student_works(session)
+    old_student_info = database.get.get_student_works(login=login)
+    new_student_info = html_parser.works.get_student_works(session)
 
     for workInfo in new_student_info:
         # если работа не изменилась - скип
@@ -43,7 +50,21 @@ def get_updated_student_works(login: str, password: str = None, session: request
         updated_student_info.append(workInfo)
 
     # закрытие сессии для избежания таймаута
-    session.close()
+    if should_close_session:
+        session.close()
+
+    return updated_student_info
+
+
+def get_updated_student_works_by_comparing(old_works: list[WorkInfo], new_works: list[WorkInfo]) -> list[WorkInfo]:
+    updated_student_info = []
+
+    for workInfo in new_works:
+        # если работа не изменилась - скип
+        if workInfo in old_works:
+            continue
+        # иначе - добавить в список обновленных
+        updated_student_info.append(workInfo)
 
     return updated_student_info
 
@@ -75,3 +96,53 @@ def update_all_user_works_list(login: str) -> None:
     r"""Updates ALL user works with new information"""
     updated_works = get_updated_student_works(login, database.get.get_user_password(login=login))
     database.update.update_student_works(updated_works, login)
+
+
+def get_updated_student_grades(login: str, password: str = None, session: requests.Session = None) -> list[GradeInfo]:
+    r"""Function can be only used on student accounts. There is no check if session is actually viable.
+    :param login: user login
+    :param password: user password
+    :param session: :class:`Session` object with authorized user (optional)
+
+    :return: list of :class:`GradeInfo` objects of works that were changed since last check"""
+    should_close_session = False
+
+    updated_student_info = []
+
+    if password is None:
+        password = database.get.get_user_password(login=login)
+
+    # если сессия не передана в функцию - создаем и закрываем по окончанию
+    if session is None:
+        session = html_parser.main.authorize(login, password)
+        should_close_session = True
+
+    # получение оценок до проверки и после проверки
+    old_student_grades = database.get.get_user_grades(login=login)
+    new_student_grades = html_parser.grades.get_student_grades(session)
+
+    for gradeInfo in new_student_grades:
+        # если оцнеки не изменилась - скип
+        if gradeInfo in old_student_grades:
+            continue
+        # иначе - добавить в список обновленных
+        updated_student_info.append(gradeInfo)
+
+    # закрытие сессии для избежания таймаута
+    if should_close_session:
+        session.close()
+
+    return updated_student_info
+
+
+def get_updated_student_grades_by_comparing(old_grades: list[GradeInfo], new_grades: list[GradeInfo]) -> list[GradeInfo]:
+    updated_student_info = []
+
+    for workInfo in new_grades:
+        # если работа не изменилась - скип
+        if workInfo in old_grades:
+            continue
+        # иначе - добавить в список обновленных
+        updated_student_info.append(workInfo)
+
+    return updated_student_info

@@ -1,17 +1,20 @@
 from re import Match
+
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 
-import keyboards.grades
-from logger import logging
 import database
-import database.get, database.update, database.delete, database.other
-
+import database.delete
+import database.get
+import database.other
+import database.update
+import keyboards.grades
+import misc.utils
+from logger import logging
 
 # рутер для подключения в основном файле
 router = Router()
 r"""Router for grades button"""
-
 
 # конфигурация логгинга
 logging = logging.getLogger(__name__)
@@ -58,15 +61,15 @@ async def show_term_grades(user_id: int, term: int, *, message_reply_to: Message
 
     grades_info_list = database.get.get_user_grades(user_id=user_id, term=term)
 
-    msg = (f'<b>Оценки в {term} семестре:</b>\n'
-           f'\n')
+    msg = f'<b>Оценки в {term} семестре:</b>\n'
 
     for grade_info in grades_info_list:
-        msg += f'{grade_info.subject} - <b>{grade_info.grade}</b>\n\n'
-    msg = msg[:-2]
+        msg += f'\n{misc.utils.format_grade_message(grade_info)}\n'
+    msg = msg[:-1]
 
+    # количество семестров у пользователя
+    user_max_term = database.get.get_user_max_term(user_id=user_id)
     if message_to_edit is None:
-        await message_reply_to.reply(text=msg, reply_markup=keyboards.grades.get_grades_default_kb())
+        await message_reply_to.reply(text=msg, reply_markup=keyboards.grades.get_grades_default_kb(user_max_term))
     else:
-        await message_to_edit.edit_text(text=msg, reply_markup=keyboards.grades.get_grades_default_kb())
-
+        await message_to_edit.edit_text(text=msg, reply_markup=keyboards.grades.get_grades_default_kb(user_max_term))

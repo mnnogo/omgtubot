@@ -1,14 +1,20 @@
 import time
+
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, InlineKeyboardButton, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-import database.get, database.delete, database.update, database.other
-import encryption
-import html_parser.main, html_parser.works
-from logger import logging
 
+import database.delete
+import database.get
+import database.other
+import database.update
+import encryption
+import html_parser.grades
+import html_parser.main
+import html_parser.works
+from logger import logging
 
 # рутер для подключения в основном файле
 router = Router()
@@ -24,6 +30,7 @@ class States(StatesGroup):
     waiting_for_login = State()
     waiting_for_password = State()
     waiting_for_change_acc_answer = State()
+    waiting_for_term = State()
 
 
 # нажатие кнопки "Авторизация"
@@ -32,11 +39,9 @@ async def authorization_command(message: Message, state: FSMContext):
     # если пользователь уже авторизован ###########################################
     if database.other.is_user_authorized(message.from_user.id):
         # создание клавиатуры под сообщением
-        btn_yes = InlineKeyboardButton(text='✅ Да', callback_data='btn_change_account')
-        btn_no = InlineKeyboardButton(text='❌ Нет', callback_data='btn_decline_change_account')
-
         builder = InlineKeyboardBuilder()
-        builder.row(btn_yes, btn_no)
+        builder.row(InlineKeyboardButton(text='✅ Да', callback_data='btn_change_account'),
+                    InlineKeyboardButton(text='❌ Нет', callback_data='btn_decline_change_account'))
 
         await message.reply(f'Вы уже авторизованы под логином "{database.get.get_user_login(message.from_user.id)}". '
                             f'Хотите <b>изменить</b> аккаунт?', reply_markup=builder.as_markup())
@@ -78,15 +83,29 @@ async def wait_for_password(message: Message, state: FSMContext):
     await state.set_state(States.waiting_for_password)
 
 
-# обработка логина и пароля после их ввода
+# запрос текущего семестра после ввода пароля
 @router.message(States.waiting_for_password)
+async def wait_for_term(message: Message, state: FSMContext):
+    await state.update_data(password=message.text)
+
+    await message.answer('Введите ваш текущий семестр:')
+    await state.set_state(States.waiting_for_term)
+
+
+# обработка логина и пароля после их ввода
+@router.message(States.waiting_for_term)
 async def authorization_handler(message: Message, state: FSMContext):
+    if not message.text.isdigit() or int(message.text) < 1:
+        await message.reply('Число некорректно. Попробуйте еще раз:')
+        return
+
     warning_data_message = await message.answer('Выполняется проверка на корректность данных. Процесс может занять '
                                                 'около минуты...')
     _data = await state.get_data()
 
     login = _data.get('login')
-    password = message.text
+    password = _data.get('password')
+    selected_term = int(message.text)
 
     # информация в логи
     logging.info(f'Началась авторизация пользователя "{message.from_user.id}", логин - "{login}"...')
@@ -107,16 +126,22 @@ async def authorization_handler(message: Message, state: FSMContext):
         await state.clear()
         return
 
-    # если пользователь уже был авторизован и меняет аккаунт, удаление старых работ из БД
+    # информация в логи
+    end_time = time.time()
+    logging.info(f'Авторизация закончилась. Затраченное время: {end_time - start_time}')
+
+    # если пользователь уже был авторизован и меняет аккаунт, удаление старых работ и оценок из БД
     if database.other.is_user_authorized(message.from_user.id):
         login = database.get.get_user_login(message.from_user.id)
         database.delete.delete_all_student_works(login)
+        database.delete.delete_all_student_grades(login)
+        # взять
 
     # кодирование пароля перед занесением в БД
     encrypted_password = encryption.encrypt(password)
 
     # добавление/обновление пользователя в БД
-    database.update.update_user(message.from_user.id, login, encrypted_password)
+    database.update.update_user(message.from_user.id, login, encrypted_password, term=selected_term)
 
     warning_works_message = await message.answer('Успешно. Собираем информацию о работах с сайта. Процесс может '
                                                  'занять около 3 минут.......')
@@ -128,21 +153,25 @@ async def authorization_handler(message: Message, state: FSMContext):
     await warning_works_message.delete()
 
     warning_grades_message = await message.answer('Успешно. Собираем информацию об оценках с сайта. Процесс может '
-                                                  'занять около (?)')
-    # TODO
+                                                  'занять около 2 минут...')
 
-    i = 1
-    msg = 'Успешно. При изменении статуса работ Вам придет уведомление.\n' \
-          '\n' \
-          '<b>Список Ваших работ</b>:\n'
-    for work in all_works:
-        msg += f'\n{i}. {str(work)}\n'
-        i += 1
+    all_grades = html_parser.grades.get_student_grades(session)
+    database.update.update_student_grades(all_grades, login)
 
-    await message.answer(msg)
+    # из БД взять максимальное значение семестра и занести ее в user_info
+    max_term = database.get.get_user_max_term(login=login)
+    database.update.update_user_max_term(message.from_user.id, max_term)
 
-    # информация в логи
-    end_time = time.time()
-    logging.info(f'Авторизация закончилась. Затраченное время: {end_time - start_time}')
+    await warning_grades_message.delete()
+    await message.answer('Успешно. При изменении статуса работ или оценок Вам придет уведомление.\n'
+                         '\n'
+                         'Можете сверить информацию, нажав на <b>"Посмотреть список работ"</b> и '
+                         '<b>"Посмотреть зачетку"</b>.\n')
+
+    session.close()
+
+    if selected_term > max_term:
+        await message.answer(f'Введенный семестр не существует (их всего {max_term}). '
+                             f'Вы можете поменять это в настройках.')
 
     await state.clear()

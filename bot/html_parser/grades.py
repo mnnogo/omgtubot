@@ -2,7 +2,6 @@ import time
 
 import requests
 
-import html_parser.main
 from GradeInfo import *
 from bs4 import BeautifulSoup, ResultSet
 from logger import logging
@@ -159,8 +158,3 @@ def _format_subject_rows(subject_rows: ResultSet) -> list[list[str]]:
         subject_rows_formatted.append(_row_formatted)
 
     return subject_rows_formatted
-
-
-result = get_student_grades(html_parser.main.authorize('Sergei_Polozhentsev_5912', '4a1ae508'))
-for reslt_elem in result:
-    print(reslt_elem)

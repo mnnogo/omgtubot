@@ -17,7 +17,7 @@ def authorize(login: str, password: str) -> requests.Session | int:
     r""":return: :class:`Session` object with authorized user, or 1 - if there's connection error,
     2 - if there's mistake in login or password"""
     start_time = time.time()
-    logging.debug(f'Началась авторизация пользователя "{login}"')
+    logging.debug(f'Начался вход пользователя "{login}"')
 
     # ссылка на авторизацию пользователя
     login_url = 'https://www.omgtu.ru/ecab/index.php?login=yes'

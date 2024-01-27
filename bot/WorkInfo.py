@@ -7,7 +7,9 @@ class WorkStatus(Enum):
     DECLINED = 2
 
     def __str__(self):
-        return f'{"работа принята ✅" if self == WorkStatus.ACCEPTED else "работа отклонена ❌" if self == WorkStatus.DECLINED else "работа не посмотрена 📋"}'
+        return f'{"работа принята ✅" if self == WorkStatus.ACCEPTED else
+                  "работа отклонена ❌" if self == WorkStatus.DECLINED else
+                  "работа не посмотрена 📋"}'
 
 
 class WorkInfo:

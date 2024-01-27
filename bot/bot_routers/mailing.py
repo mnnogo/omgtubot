@@ -27,29 +27,27 @@ class States(StatesGroup):
 
 @router.message(F.from_user.id == misc.env.DEVELOPER_CHAT_ID, F.text == 'Сделать рассылку')
 async def btn_send_mailing_pressed(message: Message, state: FSMContext):
-    btn_cancel_mailing = InlineKeyboardButton(text='❌ Отмена', callback_data='btn_cancel_mailing')
-
     builder = InlineKeyboardBuilder()
-    builder.row(btn_cancel_mailing)
+    builder.row(InlineKeyboardButton(text='❌ Отмена', callback_data='btn_cancel_mailing'))
 
     await message.reply(f'Введите сообщение:', reply_markup=builder.as_markup(resize_keyboard=True))
     await state.set_state(States.waiting_for_message)
 
 
-@router.callback_query(F.data == 'btn_cancel_mailing')
-async def btn_cancel_mailing_pressed(query: CallbackQuery):
+# нажата '❌ Отмена' в подтверждении
+@router.callback_query(F.data == 'btn_cancel_mailing', States.waiting_for_message)
+async def btn_cancel_mailing_pressed(query: CallbackQuery, state: FSMContext):
     await query.message.delete()
     await query.message.answer('Операция отменена.')
+    await state.clear()
 
 
 # сообщение для рассылки отправлено
 @router.message(States.waiting_for_message)
 async def mailing_message_sent(message: Message, state: FSMContext):
-    btn_confirm_yes = InlineKeyboardButton(text='✅ Да', callback_data='btn_confirm_yes')
-    btn_confirm_no = InlineKeyboardButton(text='❌ Нет', callback_data='btn_confirm_no')
-
     builder = InlineKeyboardBuilder()
-    builder.row(btn_confirm_yes, btn_confirm_no)
+    builder.row(InlineKeyboardButton(text='✅ Да', callback_data='btn_confirm_yes'),
+                InlineKeyboardButton(text='❌ Нет', callback_data='btn_confirm_no'))
 
     await state.update_data(message_to_mail=message.text)
 
@@ -68,6 +66,8 @@ async def btn_confirm_yes_pressed(query: CallbackQuery, state: FSMContext):
 
     for user_id in all_users_id_list:
         await bot.send_message(user_id, message_to_mail)
+
+    logging.info(f'Сообщение было отправлено: {all_users_id_list}. Текст сообщения: "{message_to_mail}"')
 
     await query.message.delete()
     await query.message.answer(f'Сообщение отправлено: {all_users_id_list}')

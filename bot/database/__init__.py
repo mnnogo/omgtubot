@@ -14,6 +14,8 @@ def make_sql_query(query: str, params: tuple = ()) -> tuple[tuple[Any, ...], ...
     :param query: SQL query with %s instead of variable parameters
     :param params: tuple with parameters that should be instead of %s in the exact order (tuple with one parameter
     if there's only 1 parameter)"""
+    logging.debug(f'Начался выполняться запрос "{query}" с параметрами {params}')
+
     try:
         connection = pymysql.connect(
             host='127.0.0.1',
@@ -35,6 +37,6 @@ def make_sql_query(query: str, params: tuple = ()) -> tuple[tuple[Any, ...], ...
 
     result = cursor.fetchall()
 
-    logging.debug(f'Выполнился запрос "{query}" с параметрами {params}; результат - {result}')
+    logging.debug(f'Результат - {result}')
 
     return result

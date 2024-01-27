@@ -6,7 +6,6 @@ def delete_all_student_works(login: str) -> None:
     make_sql_query('DELETE FROM old_works WHERE login = %s', (login,))
 
 
-# TODO: где-то должна применяться
 def delete_all_student_grades(login: str) -> None:
     r"""Deletes all grades in database that user with omgtu 'login' had in database."""
     make_sql_query('DELETE FROM old_grades WHERE login = %s', (login,))

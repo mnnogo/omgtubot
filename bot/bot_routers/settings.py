@@ -4,11 +4,12 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-import misc.constants
+import database.delete
+import database.get
+import database.other
+import database.update
 import user_functions
 from logger import logging
-import database.get, database.update, database.delete, database.other
-
 
 # рутер для подключения в основном файле
 router = Router()
@@ -33,19 +34,16 @@ async def notifications_settings_command(message: Message):
 
     is_user_subscribed = database.other.is_user_subscribed(message.from_user.id)
 
+    builder = InlineKeyboardBuilder()
+
     # если пользователь уже подписан на уведомления
     if is_user_subscribed:
-        btn_switch_notif = InlineKeyboardButton(text='❌ Выключить уведомления', callback_data='btn_cancel_notif')
+        builder.row(InlineKeyboardButton(text='❌ Выключить уведомления', callback_data='btn_cancel_notif'))
     else:
-        btn_switch_notif = InlineKeyboardButton(text='✅ Включить уведомления', callback_data='btn_return_notif')
+        builder.row(InlineKeyboardButton(text='✅ Включить уведомления', callback_data='btn_return_notif'))
 
-    btn_change_term = InlineKeyboardButton(text='📝 Изменить семестр', callback_data='btn_change_term')
-    btn_exit_notif_menu = InlineKeyboardButton(text='Выход', callback_data='btn_exit_notif_menu')
-
-    builder = InlineKeyboardBuilder()
-    builder.row(btn_switch_notif)
-    builder.row(btn_change_term)
-    builder.row(btn_exit_notif_menu)
+    builder.row(InlineKeyboardButton(text='📝 Изменить семестр', callback_data='btn_change_term'))
+    builder.row(InlineKeyboardButton(text='Выход', callback_data='btn_exit_notif_menu'))
 
     info_msg = '<b>Настройки:</b>\n'
     info_msg += f'Уведомления - <i>{'Включены' if is_user_subscribed else 'Выключены'}</i>\n'
@@ -101,7 +99,8 @@ async def btn_change_term_pressed(query: CallbackQuery, state: FSMContext):
 # введено число нового семестра
 @router.message(States.waiting_for_term)
 async def new_term_sent(message: Message, state: FSMContext):
-    if not message.text.isdigit() or int(message.text) < 1 or int(message.text) > misc.constants.TERM_COUNT:
+    if (not message.text.isdigit() or
+            int(message.text) < 1 or int(message.text) > database.get.get_user_max_term(user_id=message.from_user.id)):
         await message.reply(text='Некорректное число. Попробуйте еще раз:')
         return
 

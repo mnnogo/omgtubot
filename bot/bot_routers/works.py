@@ -1,8 +1,12 @@
 from aiogram import Router, F
 from aiogram.types import Message
-from logger import logging
-import database.get, database.update, database.delete, database.other
 
+import database.delete
+import database.get
+import database.other
+import database.update
+import misc.utils
+from logger import logging
 
 # рутер для подключения в основном файле
 router = Router()
@@ -29,7 +33,11 @@ async def view_all_works_command(message: Message):
     i = 1
     msg = '<b>Список Ваших работ:</b>\n'
     for work in all_works:
-        msg += f'\n{i}. {str(work)}\n'
+        if i % 20 == 0:
+            await message.answer(msg)
+            msg = ''
+
+        msg += f'\n{misc.utils.format_work_message(work)}\n'
         i += 1
 
-    await message.reply(msg)
+    await message.answer(msg)
