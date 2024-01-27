@@ -159,7 +159,7 @@ async def authorization_handler(message: Message, state: FSMContext):
     database.update.update_student_grades(all_grades, login)
 
     # из БД взять максимальное значение семестра и занести ее в user_info
-    max_term = database.get.get_user_max_term(login=login)
+    max_term = database.get.get_user_max_term(login=login, based_on_works=True)
     database.update.update_user_max_term(message.from_user.id, max_term)
 
     await warning_grades_message.delete()
