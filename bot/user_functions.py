@@ -8,7 +8,7 @@ import html_parser.main
 import html_parser.works
 from GradeInfo import *
 from WorkInfo import *
-from logger import logging
+from misc.logger import logging
 
 # конфигурация логгинга
 logging = logging.getLogger(__name__)

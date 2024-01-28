@@ -1,8 +1,6 @@
+"""Keeping bot alive."""
 from flask import Flask
-from flask import request
 from threading import Thread
-import time
-import requests
 
 app = Flask('')
 
@@ -17,5 +15,6 @@ def run():
 
 
 def keep_alive():
+    """Keeping bot alive."""
     t = Thread(target=run)
     t.start()

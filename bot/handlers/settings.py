@@ -1,5 +1,4 @@
 from aiogram import Router, F
-from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton
@@ -10,7 +9,7 @@ import database.get
 import database.other
 import database.update
 import user_functions
-from logger import logging
+from misc.logger import logging
 
 # рутер для подключения в основном файле
 router = Router()

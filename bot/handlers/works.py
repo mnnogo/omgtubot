@@ -1,5 +1,4 @@
 from aiogram import Router, F
-from aiogram.filters import Command
 from aiogram.types import Message
 
 import database.delete
@@ -7,7 +6,7 @@ import database.get
 import database.other
 import database.update
 import misc.utils
-from logger import logging
+from misc.logger import logging
 
 # рутер для подключения в основном файле
 router = Router()

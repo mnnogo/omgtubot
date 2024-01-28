@@ -4,7 +4,7 @@ import requests
 
 from GradeInfo import *
 from bs4 import BeautifulSoup, ResultSet
-from logger import logging
+from misc.logger import logging
 from errors import ParseError
 
 

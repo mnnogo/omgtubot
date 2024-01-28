@@ -1,5 +1,5 @@
 from typing import Any
-from logger import logging
+from misc.logger import logging
 import pymysql
 
 

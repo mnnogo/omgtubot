@@ -5,7 +5,7 @@ from GradeInfo import *
 from WorkInfo import *
 from database import make_sql_query
 from database.get import get_user_login
-from logger import logging
+from misc.logger import logging
 
 # конфигурация логгинга
 logging = logging.getLogger(__name__)

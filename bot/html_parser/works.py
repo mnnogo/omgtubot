@@ -4,7 +4,7 @@ import time
 import requests
 from bs4 import BeautifulSoup
 from WorkInfo import *
-from logger import logging
+from misc.logger import logging
 
 
 # конфигурация логгинга

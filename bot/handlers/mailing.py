@@ -8,7 +8,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 import database.get
 import database.other
 import misc.env
-from logger import logging
+from misc.logger import logging
 from bot_init import bot
 
 # рутер для подключения в основном файле

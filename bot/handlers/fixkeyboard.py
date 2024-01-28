@@ -3,7 +3,7 @@ from aiogram.types import Message
 
 import database.get
 import keyboards.main
-from logger import logging
+from misc.logger import logging
 import misc.env
 from bot_init import bot
 

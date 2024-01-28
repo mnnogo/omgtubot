@@ -17,7 +17,7 @@ import html_parser.grades
 import html_parser.main
 import html_parser.works
 import misc.utils
-from logger import logging
+from misc.logger import logging
 
 # рутер для подключения в основном файле
 router = Router()

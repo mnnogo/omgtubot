@@ -1,7 +1,6 @@
 from re import Match
 
 from aiogram import Router, F
-from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
 
 import database
@@ -11,7 +10,7 @@ import database.other
 import database.update
 import keyboards.grades
 import misc.utils
-from logger import logging
+from misc.logger import logging
 
 # рутер для подключения в основном файле
 router = Router()

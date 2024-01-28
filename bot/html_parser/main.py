@@ -2,7 +2,7 @@ import time
 
 import requests
 import urllib3
-from logger import logging
+from misc.logger import logging
 
 
 # конфигурация логгинга
