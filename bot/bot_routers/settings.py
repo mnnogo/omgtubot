@@ -33,21 +33,29 @@ async def notifications_settings_command(message: Message):
         await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')
         return
 
-    is_user_subscribed = database.other.is_user_subscribed(message.from_user.id)
+    is_user_subscribed_notifications = database.other.is_user_subscribed_notifications(message.from_user.id)
+    is_user_subscribed_mailing = database.other.is_user_subscribed_mailing(message.from_user.id)
 
     builder = InlineKeyboardBuilder()
 
-    # если пользователь уже подписан на уведомления
-    if is_user_subscribed:
+    # смена кнопок в зависимости от подписки
+    if is_user_subscribed_notifications:
         builder.row(InlineKeyboardButton(text='❌ Выключить уведомления', callback_data='btn_cancel_notif'))
     else:
         builder.row(InlineKeyboardButton(text='✅ Включить уведомления', callback_data='btn_return_notif'))
+
+    # смена кнопок в зависимости от подписки
+    if is_user_subscribed_mailing:
+        builder.row(InlineKeyboardButton(text='❌ Выключить рассылку', callback_data='btn_cancel_mailing'))
+    else:
+        builder.row(InlineKeyboardButton(text='✅ Включить рассылку', callback_data='btn_return_mailing'))
 
     builder.row(InlineKeyboardButton(text='📝 Изменить семестр', callback_data='btn_change_term'))
     builder.row(InlineKeyboardButton(text='Выход', callback_data='btn_exit_notif_menu'))
 
     info_msg = '<b>Настройки:</b>\n'
-    info_msg += f'Уведомления - <i>{'Включены' if is_user_subscribed else 'Выключены'}</i>\n'
+    info_msg += f'Уведомления - <i>{'Включены' if is_user_subscribed_notifications else 'Выключены'}</i>\n'
+    info_msg += f'Рассылка - <i>{'Включена' if is_user_subscribed_mailing else 'Выключена'}</i>\n'
     info_msg += f'Семестр - <i>{database.get.get_user_term(user_id=message.from_user.id)}</i>'
 
     await message.reply(text=info_msg, reply_markup=builder.as_markup(resize_keyboard=True))
@@ -81,10 +89,30 @@ async def btn_return_notif_pressed(query: CallbackQuery):
 @router.callback_query(F.data == 'btn_cancel_notif')
 async def btn_cancel_notif_pressed(query: CallbackQuery):
     # выключить подписку
-    database.update.update_user_notification_subscribe(query.from_user.id, False)
+    user_functions.change_user_notification_subscribe(query.from_user.id, False)
 
     await query.message.delete()
     await query.message.answer('Уведомления больше не будут приходить.')
+
+
+# нажата кнопка '✅ Включить рассылку'
+@router.callback_query(F.data == 'btn_return_mailing')
+async def btn_return_mailing_pressed(query: CallbackQuery):
+    # включить подписку
+    user_functions.change_user_mailing_subscribe(query.from_user.id, True)
+
+    await query.message.delete()
+    await query.message.answer('Получение рассылки включено.')
+
+
+# нажата кнопка '❌ Выключить рассылку'
+@router.callback_query(F.data == 'btn_cancel_mailing')
+async def btn_cancel_mailing_pressed(query: CallbackQuery):
+    # выключить подписку
+    user_functions.change_user_mailing_subscribe(query.from_user.id, False)
+
+    await query.message.delete()
+    await query.message.answer('Рассылка больше не будет приходить.')
 
 
 # нажата кнопка '📝 Изменить семестр'

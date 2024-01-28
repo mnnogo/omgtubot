@@ -139,7 +139,7 @@ async def authorization_handler(message: Message, state: FSMContext):
         database.delete.delete_all_student_grades(login)
 
         # взять из БД статус подписки и не изменять его
-        is_user_subscribed = database.other.is_user_subscribed(message.from_user.id)
+        is_user_subscribed = database.other.is_user_subscribed_notifications(message.from_user.id)
 
     # кодирование пароля перед занесением в БД
     encrypted_password = encryption.encrypt(password)

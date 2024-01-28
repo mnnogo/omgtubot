@@ -9,22 +9,24 @@ from logger import logging
 logging = logging.getLogger(__name__)
 
 
-def update_user(user_id: int, login: str, password: str, notification_subscribe: bool = True, term: int = 1,
-                max_term: int = 8) -> None:
+def update_user(user_id: int, login: str, password: str, notification_subscribe: bool = True,
+                mailing_subscribe: bool = True, term: int = 1, max_term: int = 8) -> None:
     r"""Adds user into database; if 'user_id' is already in database, only updates login and password,
     keeping 'user_id' and 'notifications' the same.
 
+    :param mailing_subscribe: defines if user will get mailings
     :param max_term: last user term
     :param term: current user's term that user picked
     :param user_id: user's telegram ID (not tag)
     :param login: user's login on omgtu site
     :param password: user's password on omgtu site (preferably encrypted)
     :param notification_subscribe: defines if user will get notifications about work status and grades changes"""
-    make_sql_query('INSERT INTO user_info(tg_id, login, password, notifications, term, max_term) '
-                   'VALUES (%s, %s, %s, %s, %s, %s) '
-                   'ON DUPLICATE KEY UPDATE login = %s, password = %s, notifications = %s, term = %s, max_term = %s',
-                   (user_id, login, password, notification_subscribe, term, max_term,
-                    login, password, notification_subscribe, term, max_term))
+    make_sql_query('INSERT INTO user_info(tg_id, login, password, notifications, mailing, term, max_term) '
+                   'VALUES (%s, %s, %s, %s, %s, %s, %s) '
+                   'ON DUPLICATE KEY UPDATE login = %s, password = %s, notifications = %s, mailing = %s, term = %s, '
+                   'max_term = %s',
+                   (user_id, login, password, notification_subscribe, mailing_subscribe, term, max_term,
+                    login, password, notification_subscribe, mailing_subscribe, term, max_term))
 
 
 def update_student_works(works: list[WorkInfo], login: str) -> None:
@@ -49,6 +51,12 @@ def update_user_notification_subscribe(user_id: int, notification_subscribe: boo
     r"""Changes database info about notification subsсription for user"""
     make_sql_query('UPDATE user_info SET notifications = %s WHERE tg_id = %s',
                    (notification_subscribe, user_id))
+
+
+def update_user_mailing_subscribe(user_id: int, mailing_subscribe: bool) -> None:
+    r"""Changes database info about mailing subsсription for user"""
+    make_sql_query('UPDATE user_info SET mailing = %s WHERE tg_id = %s',
+                   (mailing_subscribe, user_id))
 
 
 def update_user_term(user_id: int, term: int) -> None:

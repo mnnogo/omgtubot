@@ -21,5 +21,4 @@ async def btn_fixkeyboard_pressed(message: Message):
     all_users_id = database.get.get_users_list()
 
     for user_id in all_users_id:
-        message = await bot.send_message(user_id, 'update', reply_markup=keyboards.main.get_main_keyboard(user_id))
-        await bot.delete_message(user_id, message.message_id)
+        await bot.send_message(user_id, 'Клавиатура обновлена.', reply_markup=keyboards.main.get_main_keyboard(user_id))

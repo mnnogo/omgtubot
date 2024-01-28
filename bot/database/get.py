@@ -77,7 +77,14 @@ def get_user_id(login: str) -> int | None:
 
 def get_notification_subscribers_id() -> list[int]:
     r"""Gets all telegram ID of users, whose 'notification' field is 1 (True) in database"""
-    result = make_sql_query('SELECT tg_id FROM user_info WHERE notifications = 1', ())
+    result = make_sql_query('SELECT tg_id FROM user_info WHERE notifications = 1')
+
+    return [result[i][0] for i in range(len(result))]
+
+
+def get_mailing_subscribers_id() -> list[int]:
+    r"""Gets all telegram ID of users, whose 'mailing' field is 1 (True) in database"""
+    result = make_sql_query('SELECT tg_id FROM user_info WHERE mailing = 1')
 
     return [result[i][0] for i in range(len(result))]
 

@@ -6,6 +6,7 @@ from aiogram.types import Message, InlineKeyboardButton, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import database.get
+import database.other
 import misc.env
 from logger import logging
 from misc.bot_init import bot
@@ -62,15 +63,16 @@ async def btn_confirm_yes_pressed(query: CallbackQuery, state: FSMContext):
     _data = await state.get_data()
     message_to_mail = _data.get('message_to_mail')
 
-    all_users_id_list = database.get.get_users_list()
+    mailing_subscribers_list = database.get.get_mailing_subscribers_id()
 
-    for user_id in all_users_id_list:
+    for user_id in mailing_subscribers_list:
         await bot.send_message(user_id, message_to_mail)
 
-    logging.info(f'Сообщение было отправлено: {all_users_id_list}. Текст сообщения: "{message_to_mail}"')
+    logging.info(f'Сообщение было отправлено: {mailing_subscribers_list}. Текст сообщения: "{message_to_mail}"')
 
     await query.message.delete()
-    await query.message.answer(f'Сообщение отправлено: {all_users_id_list}')
+    await query.message.answer(f'Сообщение отправлено: {mailing_subscribers_list}')
+
     await state.clear()
 
 

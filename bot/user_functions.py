@@ -95,6 +95,11 @@ def change_user_notification_subscribe(user_id: int, notification_subscribe: boo
     database.update.update_user_notification_subscribe(user_id, notification_subscribe)
 
 
+def change_user_mailing_subscribe(user_id: int, mailing_subscribe: bool) -> None:
+    r"""Changes info about mailing subsсription for user"""
+    database.update.update_user_mailing_subscribe(user_id, mailing_subscribe)
+
+
 def update_all_user_works_list(login: str) -> None:
     r"""Updates ALL user works with new information"""
     updated_works = get_updated_student_works(login, database.get.get_user_password(login=login))
