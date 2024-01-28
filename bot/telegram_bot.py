@@ -151,7 +151,7 @@ async def send_works_notification(user_id: int, works: list[WorkInfo]):
     msg = 'Работы изменили статус:\n'
     i = 1
     for work in works:
-        if i % 30 == 0:  # не больше 20 работ в сообщении
+        if i % 30 == 0:  # не больше 30 работ в сообщении
             await bot.send_message(user_id, msg)
             msg = ''
 

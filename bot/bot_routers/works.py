@@ -19,7 +19,7 @@ logging = logging.getLogger(__name__)
 
 
 # нажатие кнопки "Посмотреть список работ"
-@router.message(Command('myworks'))
+@router.message(F.text == 'Посмотреть работы')
 async def view_all_works_command(message: Message):
     if not database.other.is_user_authorized(message.from_user.id):
         await message.reply('Вы еще не авторизованы. Для просмотра списка работ пройдите <b>Авторизацию</b>.')

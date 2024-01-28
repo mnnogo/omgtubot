@@ -27,7 +27,7 @@ class States(StatesGroup):
 
 
 # нажатие кнопки "Настройки"
-@router.message(Command('settings'))
+@router.message(F.text == 'Настройки')
 async def notifications_settings_command(message: Message):
     if not database.other.is_user_authorized(message.from_user.id):
         await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')

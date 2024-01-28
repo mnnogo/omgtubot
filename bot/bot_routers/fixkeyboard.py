@@ -22,3 +22,4 @@ async def btn_fixkeyboard_pressed(message: Message):
 
     for user_id in all_users_id:
         await bot.send_message(user_id, 'Клавиатура обновлена.', reply_markup=keyboards.main.get_main_keyboard(user_id))
+

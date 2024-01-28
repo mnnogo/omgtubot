@@ -22,7 +22,7 @@ logging = logging.getLogger(__name__)
 
 
 # нажатие кнопки "Посмотреть зачетку"
-@router.message(Command('mygrades'))
+@router.message(F.text == 'Посмотреть зачетку')
 async def view_all_grades(message: Message):
     if not database.other.is_user_authorized(message.from_user.id):
         await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')
