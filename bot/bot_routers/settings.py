@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton
@@ -26,7 +27,7 @@ class States(StatesGroup):
 
 
 # нажатие кнопки "Настройки"
-@router.message(F.text == 'Настройки')
+@router.message(Command('settings'))
 async def notifications_settings_command(message: Message):
     if not database.other.is_user_authorized(message.from_user.id):
         await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')
@@ -47,7 +48,7 @@ async def notifications_settings_command(message: Message):
 
     info_msg = '<b>Настройки:</b>\n'
     info_msg += f'Уведомления - <i>{'Включены' if is_user_subscribed else 'Выключены'}</i>\n'
-    info_msg += f'Семестр - <i>{database.get.get_user_term(message.from_user.id)}</i>'
+    info_msg += f'Семестр - <i>{database.get.get_user_term(user_id=message.from_user.id)}</i>'
 
     await message.reply(text=info_msg, reply_markup=builder.as_markup(resize_keyboard=True))
 

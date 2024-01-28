@@ -1,6 +1,7 @@
 from re import Match
 
 from aiogram import Router, F
+from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
 
 import database
@@ -21,14 +22,14 @@ logging = logging.getLogger(__name__)
 
 
 # нажатие кнопки "Посмотреть зачетку"
-@router.message(F.text == 'Посмотреть зачетку')
+@router.message(Command('mygrades'))
 async def view_all_grades(message: Message):
     if not database.other.is_user_authorized(message.from_user.id):
         await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')
         return
 
     # семестр, выбранный пользователем при регистрации или настройке
-    users_term = database.get.get_user_term(message.from_user.id)
+    users_term = database.get.get_user_term(user_id=message.from_user.id)
 
     await show_term_grades(message.from_user.id, users_term, message_reply_to=message)
 

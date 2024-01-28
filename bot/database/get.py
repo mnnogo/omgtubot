@@ -82,7 +82,12 @@ def get_notification_subscribers_id() -> list[int]:
     return [result[i][0] for i in range(len(result))]
 
 
-def get_user_term(user_id: int, login: str) -> int:
+def get_user_term(*, user_id: int = None, login: str = None) -> int:
+    if user_id is None and login is None:
+        error_msg = 'Хотя бы один аргумент должен быть передан'
+        logging.exception(error_msg)
+        raise ValueError(error_msg)
+
     result = make_sql_query('SELECT term FROM user_info WHERE tg_id = %s OR login = %s', (user_id, login))
 
     return result[0][0]

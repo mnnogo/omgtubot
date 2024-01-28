@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from aiogram.filters import Command
 from aiogram.types import Message
 
 import database.delete
@@ -18,7 +19,7 @@ logging = logging.getLogger(__name__)
 
 
 # нажатие кнопки "Посмотреть список работ"
-@router.message(F.text == 'Посмотреть список работ')
+@router.message(Command('myworks'))
 async def view_all_works_command(message: Message):
     if not database.other.is_user_authorized(message.from_user.id):
         await message.reply('Вы еще не авторизованы. Для просмотра списка работ пройдите <b>Авторизацию</b>.')
@@ -28,7 +29,7 @@ async def view_all_works_command(message: Message):
     login = database.get.get_user_login(message.from_user.id)
 
     # получение работ из БД по логину
-    all_works = database.get.get_student_works(login)
+    all_works = database.get.get_student_works(login=login)
 
     i = 1
     msg = '<b>Список Ваших работ:</b>\n'

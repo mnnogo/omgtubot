@@ -1,6 +1,7 @@
 import time
 
 from aiogram import Router, F
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, InlineKeyboardButton, CallbackQuery
@@ -34,7 +35,7 @@ class States(StatesGroup):
 
 
 # нажатие кнопки "Авторизация"
-@router.message(F.text == 'Авторизация')
+@router.message(Command('authorization'))
 async def authorization_command(message: Message, state: FSMContext):
     # если пользователь уже авторизован ###########################################
     if database.other.is_user_authorized(message.from_user.id):

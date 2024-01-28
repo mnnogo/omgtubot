@@ -17,7 +17,7 @@ import misc.env
 import misc.utils
 import user_functions
 from GradeInfo import *
-from bot_routers import authorization, works, grades, settings, mailing
+from bot_routers import authorization, works, grades, settings, mailing, fixkeyboard
 from logger import logging
 from misc.bot_init import bot, dp
 
@@ -25,8 +25,10 @@ from misc.bot_init import bot, dp
 logging = logging.getLogger(__name__)
 
 
-# подключение рутеров из файлов (разбито по каждой кнопке)
-dp.include_routers(authorization.router, works.router, grades.router, settings.router, mailing.router)
+# подключение рутеров из файлов (разбито по каждой команде и кнопке)
+dp.include_routers(
+    authorization.router, works.router, grades.router, settings.router, mailing.router, fixkeyboard.router
+)
 
 
 # команда /start
@@ -57,7 +59,7 @@ async def start_command(message: Message):
     await message.reply(text=msg, reply_markup=keyboards.main.get_main_keyboard(message.from_user.id))
 
 
-@dp.message(Command('fix_keyboard'))
+@dp.message(Command('fixkeyboard'))
 async def update_keyboard_command(message: Message):
     await message.reply('Клавиатура исправлена.', reply_markup=keyboards.main.get_main_keyboard(message.from_user.id))
 
@@ -204,7 +206,7 @@ async def run_bot():
     background.keep_alive()
 
     # запуск периодических уведомлений
-    asyncio.ensure_future(send_notifications_periodically())
+    # asyncio.ensure_future(send_notifications_periodically())
 
     logging.debug('Попытка запустить бота...')
 
