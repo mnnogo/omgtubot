@@ -5,7 +5,7 @@ import database.get
 import keyboards.main
 from logger import logging
 import misc.env
-from misc.bot_init import bot
+from bot_init import bot
 
 # рутер для подключения в основном файле
 router = Router()

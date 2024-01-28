@@ -121,7 +121,7 @@ async def btn_change_term_pressed(query: CallbackQuery, state: FSMContext):
     await query.message.delete()
     await query.message.answer(text='Введите новое значение:\n'
                                     '<i>(значение семестра автоматически вырастает на единицу 31 января '
-                                    'и 31 августа)</i>')
+                                    'и 31 июля)</i>')
     await state.set_state(States.waiting_for_changed_term)
 
 

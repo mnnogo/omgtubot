@@ -9,7 +9,7 @@ import database.get
 import database.other
 import misc.env
 from logger import logging
-from misc.bot_init import bot
+from bot_init import bot
 
 # рутер для подключения в основном файле
 router = Router()

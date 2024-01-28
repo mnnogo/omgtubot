@@ -1,6 +1,8 @@
 import asyncio
 import time
+from datetime import datetime
 
+import schedule
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ErrorEvent
 
@@ -19,7 +21,7 @@ import user_functions
 from GradeInfo import *
 from bot_routers import authorization, works, grades, settings, mailing, fixkeyboard
 from logger import logging
-from misc.bot_init import bot, dp
+from bot_init import bot, dp
 
 # конфигурация логгинга
 logging = logging.getLogger(__name__)
@@ -32,7 +34,7 @@ dp.include_routers(
 
 
 # команда /start
-@dp.message(CommandStart())
+@dp.message(CommandStart(), Command('help'))
 async def start_command(message: Message):
     msg = 'Привет! Этот бот позволяет отслеживать обновления статуса работ в отчетных работах и оценок на сайте ОмГТУ.\n' \
           '\n' \
@@ -44,7 +46,7 @@ async def start_command(message: Message):
           'Текущий семестр указывается пользователем при авторизации. Проверка происходит раз в 2 часа. ' \
           'Если вами была удалена или выложена новая работа, то об этом не придет уведомление\n' \
           '\n' \
-          'Каждые 31 января и 31 августа происходит изменение текущего семестра на +1. Семестр влияет только на ' \
+          'Каждые 31 января и 31 июля происходит изменение текущего семестра на +1. Семестр влияет только на ' \
           'уведомления об оценках.\n' \
           '\n' \
           'В будущем возможности бота вероятно будут расширяться.\n' \
@@ -186,11 +188,56 @@ async def send_grades_notification(user_id: int, grades: list[GradeInfo]):
     await bot.send_message(user_id, msg)
 
 
+async def try_update_term() -> None:
+    while True:
+        logging.debug('Запущена проверка на обновление семестра')
+        try:
+            users_list = database.get.get_users_to_update_term()
+
+            for user_id in users_list:
+                current_term = database.get.get_user_term(user_id=user_id)
+                max_term = database.get.get_user_max_term(user_id=user_id)
+
+                # семестры закончились
+                if current_term > max_term:
+                    continue
+
+                # был ли скипнут апдейт для пользователя или сейчас дата обновления
+                update_term: bool = True or misc.utils.was_update_skipped(
+                    datetime.now().date(),
+                    database.get.get_user_last_update(user_id)
+                ) or misc.utils.is_update_date_correct(
+                    datetime.now().date()
+                )
+
+                if update_term:
+                    database.update.update_user_term(user_id, current_term + 1)
+
+                    logging.info(f'Обновлен семестр пользователю "{user_id}" на {current_term + 1}')
+
+                    if current_term == max_term:
+                        await bot.send_message(user_id, 'Поздравляю! Вы закончили учиться!')
+                    else:
+                        await bot.send_message(user_id, f'Семестр автоматически обновлен на <b>{current_term + 1}</b>.')
+
+                    database.update.update_user_last_update(
+                        user_id,
+                        misc.utils.round_down_the_date(datetime.now().date())
+                    )
+
+        except Exception as e:
+            logging.exception(e)
+            await notify_developer(str(e))
+
+        # проверка каждые пол месяца (макс. пол месяца задержки некритично)
+        await asyncio.sleep(60 * 60 * 24 * 15)
+
+
 @dp.error()
 async def errors_handler(event: ErrorEvent):
-    exception_text = event.format_exc()
-    logging.exception(exception_text)
-    await notify_developer(exception_text)
+    exception_text = event.exception
+    logging.exception(exception_text, exc_info=True)
+    await notify_developer(str(exception_text))
     return True
 
 
@@ -202,6 +249,9 @@ async def notify_developer(exception_text: str):
 async def run_bot():
     # предотвращение выключения бота
     background.keep_alive()
+
+    # запуск прибавления семестра 31 января и 31 июля (даже если бот выключен в эти даты)
+    asyncio.ensure_future(try_update_term())
 
     # запуск периодических уведомлений
     # asyncio.ensure_future(send_notifications_periodically())

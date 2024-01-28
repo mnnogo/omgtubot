@@ -1,3 +1,5 @@
+from datetime import date
+
 import encryption
 from database import make_sql_query
 
@@ -100,12 +102,17 @@ def get_user_term(*, user_id: int = None, login: str = None) -> int:
     return result[0][0]
 
 
+def get_user_last_update(user_id: int) -> date:
+    result = make_sql_query('SELECT last_update FROM user_info WHERE tg_id = %s', (user_id,))
+
+    return result[0][0]
+
+
 def get_user_max_term(*, user_id: int = None, login: str = None, based_on_works: bool = False) -> int:
     r"""
     :param login: omgtu login
     :param user_id: telegram user id
-    :param based_on_works: set it to True if max_term in table user_info is still not set to correct value. Then
-    it will check max term of all grades in old_grade table
+    :param based_on_works: set it to True if max_term in table user_info is still not set to correct value. Then it will check max term of all grades in old_grade table
     """
     if user_id is None and login is None:
         error_msg = 'Хотя бы один аргумент должен быть передан'
@@ -158,6 +165,19 @@ def get_user_grades(*, login: str = None, user_id: int = None, term: int = None)
 
 def get_users_list() -> list[int]:
     result_tuples = make_sql_query('SELECT tg_id FROM user_info')
+
+    result = []
+
+    for _tuple in result_tuples:
+        result.append(_tuple[0])
+
+    return result
+
+
+def get_users_to_update_term() -> list[int]:
+    r"""Gets users whose term > max_term"""
+    # term превышает max_term на 1 в последний апдейт юзера, иначе надо обновлять
+    result_tuples = make_sql_query('SELECT tg_id FROM user_info WHERE max_term >= term')
 
     result = []
 

@@ -1,19 +1,22 @@
+from datetime import datetime, date
+
+import misc.utils
 from GradeInfo import *
 from WorkInfo import *
 from database import make_sql_query
 from database.get import get_user_login
 from logger import logging
 
-
 # конфигурация логгинга
 logging = logging.getLogger(__name__)
 
 
 def update_user(user_id: int, login: str, password: str, notification_subscribe: bool = True,
-                mailing_subscribe: bool = True, term: int = 1, max_term: int = 8) -> None:
-    r"""Adds user into database; if 'user_id' is already in database, only updates login and password,
-    keeping 'user_id' and 'notifications' the same.
+                mailing_subscribe: bool = True, term: int = 1, max_term: int = 8,
+                last_update: date = datetime.now().date()) -> None:
+    r"""Adds user into database or updates based on user_id.
 
+    :param last_update: last time system updated user's term. Only 31 jan or 31 july can be given (dates of updates)
     :param mailing_subscribe: defines if user will get mailings
     :param max_term: last user term
     :param term: current user's term that user picked
@@ -21,12 +24,18 @@ def update_user(user_id: int, login: str, password: str, notification_subscribe:
     :param login: user's login on omgtu site
     :param password: user's password on omgtu site (preferably encrypted)
     :param notification_subscribe: defines if user will get notifications about work status and grades changes"""
-    make_sql_query('INSERT INTO user_info(tg_id, login, password, notifications, mailing, term, max_term) '
-                   'VALUES (%s, %s, %s, %s, %s, %s, %s) '
+    if not misc.utils.is_update_date_correct(last_update):
+        error_msg = (f'В базу данных не может быть занесена дата, отличная от 31 января и 31 июля. '
+                     f'({last_update.strftime('%Y-%m-%d')})')
+        logging.exception(error_msg)
+        raise ValueError(error_msg)
+
+    make_sql_query('INSERT INTO user_info(tg_id, login, password, notifications, mailing, term, max_term, last_update) '
+                   'VALUES (%s, %s, %s, %s, %s, %s, %s, %s) '
                    'ON DUPLICATE KEY UPDATE login = %s, password = %s, notifications = %s, mailing = %s, term = %s, '
-                   'max_term = %s',
-                   (user_id, login, password, notification_subscribe, mailing_subscribe, term, max_term,
-                    login, password, notification_subscribe, mailing_subscribe, term, max_term))
+                   'max_term = %s, last_update = %s',
+                   (user_id, login, password, notification_subscribe, mailing_subscribe, term, max_term, last_update,
+                    login, password, notification_subscribe, mailing_subscribe, term, max_term, last_update))
 
 
 def update_student_works(works: list[WorkInfo], login: str) -> None:
@@ -88,3 +97,13 @@ def update_student_grades(grades_info: list[GradeInfo], login: str = None, user_
                        'VALUES (%s, %s, %s, %s, %s, %s)',
                        (login, grade_info.subject, grade_info.term, grade_info.control_rating,
                         grade_info.grade_type, grade_info.grade.value))
+
+
+def update_user_last_update(user_id: int, date_to: date) -> None:
+    if not misc.utils.is_update_date_correct(date_to):
+        error_msg = (f'В базу данных не может быть занесена дата, отличная от 31 января и 31 июля. '
+                     f'({date_to.strftime('%Y-%m-%d')})')
+        logging.exception(error_msg)
+        raise ValueError(error_msg)
+
+    make_sql_query('UPDATE user_info SET last_update = %s WHERE tg_id = %s', (date_to, user_id))

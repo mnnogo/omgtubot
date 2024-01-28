@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 from aiogram import Router, F
 from aiogram.filters import Command
@@ -15,6 +16,7 @@ import encryption
 import html_parser.grades
 import html_parser.main
 import html_parser.works
+import misc.utils
 from logger import logging
 
 # рутер для подключения в основном файле
@@ -76,11 +78,9 @@ async def btn_decline_change_pressed(query: CallbackQuery, state: FSMContext):
 # запрос пароля после ввода логина
 @router.message(States.waiting_for_login)
 async def wait_for_password(message: Message, state: FSMContext):
-    # сохранение логина для следующих состояний
     await state.update_data(login=message.text)
 
     await message.answer('Введите пароль от аккаунта:')
-    # ожидание ввода пароля
     await state.set_state(States.waiting_for_password)
 
 
@@ -150,7 +150,8 @@ async def authorization_handler(message: Message, state: FSMContext):
         login=login,
         password=encrypted_password,
         notification_subscribe=is_user_subscribed,
-        term=selected_term
+        term=selected_term,
+        last_update=misc.utils.round_down_the_date(datetime.now().date())
     )
 
     warning_works_message = await message.answer('Успешно. Собираем информацию о работах с сайта. Процесс может '
