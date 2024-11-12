@@ -30,8 +30,8 @@ def update_user(user_id: int, login: str, password: str, notification_subscribe:
         logging.exception(error_msg)
         raise ValueError(error_msg)
 
-    make_sql_query('INSERT INTO user_info(tg_id, login, password, notifications, mailing, term, max_term, last_update) '
-                   'VALUES (%s, %s, %s, %s, %s, %s, %s, %s) '
+    make_sql_query('INSERT INTO user_info(user_id, login, password, notifications, mailing, term, max_term, '
+                   'last_update) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) '
                    'ON DUPLICATE KEY UPDATE login = %s, password = %s, notifications = %s, mailing = %s, term = %s, '
                    'max_term = %s, last_update = %s',
                    (user_id, login, password, notification_subscribe, mailing_subscribe, term, max_term, last_update,
@@ -58,22 +58,22 @@ def update_student_works(works: list[WorkInfo], login: str) -> None:
 
 def update_user_notification_subscribe(user_id: int, notification_subscribe: bool) -> None:
     r"""Changes database info about notification subsсription for user"""
-    make_sql_query('UPDATE user_info SET notifications = %s WHERE tg_id = %s',
+    make_sql_query('UPDATE user_info SET notifications = %s WHERE user_id = %s',
                    (notification_subscribe, user_id))
 
 
 def update_user_mailing_subscribe(user_id: int, mailing_subscribe: bool) -> None:
     r"""Changes database info about mailing subsсription for user"""
-    make_sql_query('UPDATE user_info SET mailing = %s WHERE tg_id = %s',
+    make_sql_query('UPDATE user_info SET mailing = %s WHERE user_id = %s',
                    (mailing_subscribe, user_id))
 
 
 def update_user_term(user_id: int, term: int) -> None:
-    make_sql_query('UPDATE user_info SET term = %s WHERE tg_id = %s', (term, user_id))
+    make_sql_query('UPDATE user_info SET term = %s WHERE user_id = %s', (term, user_id))
 
 
 def update_user_max_term(user_id: int, term: int) -> None:
-    make_sql_query('UPDATE user_info SET max_term = %s WHERE tg_id = %s', (term, user_id))
+    make_sql_query('UPDATE user_info SET max_term = %s WHERE user_id = %s', (term, user_id))
 
 
 def update_student_grades(grades_info: list[GradeInfo], login: str = None, user_id: int = None) -> None:
@@ -106,4 +106,4 @@ def update_user_last_update(user_id: int, date_to: date) -> None:
         logging.exception(error_msg)
         raise ValueError(error_msg)
 
-    make_sql_query('UPDATE user_info SET last_update = %s WHERE tg_id = %s', (date_to, user_id))
+    make_sql_query('UPDATE user_info SET last_update = %s WHERE user_id = %s', (date_to, user_id))

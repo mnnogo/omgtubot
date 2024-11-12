@@ -14,7 +14,7 @@ logging = logging.getLogger(__name__)
 
 async def try_update_term() -> None:
     while True:
-        logging.debug('Проверка на обновление семестра')
+        logging.info('Проверка на обновление семестра')
         try:
             users_list = database.get.get_users_to_update_term()
 

@@ -17,7 +17,8 @@ def format_grade_message(grade: GradeInfo) -> str:
         'Рейтинг по КН: -\n' if grade.control_rating == -1 else ''
 
     msg += control_rating_str
-    msg += f'Оценка: {grade.grade}'
+    msg += f'Оценка: {grade.grade}\n'
+    msg += f'Тип: {grade.grade_type}'
 
     return msg
 

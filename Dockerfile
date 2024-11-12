@@ -1,10 +1,6 @@
 FROM python:latest
-
-WORKDIR /usr/src/app
-
-COPY requirements.txt ./
+WORKDIR /app
+COPY requirements.txt ./app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-CMD [ "python", "./project_files/main.py" ]
+COPY . /app
+CMD [ "python", "/bot/main.py" ]

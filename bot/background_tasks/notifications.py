@@ -54,7 +54,7 @@ async def send_notifications_periodically():
 
                 # после получения работ, обновить базу со всеми работами пользователя
                 database.delete.delete_all_student_works(
-                    login)  # удалить все работы на случай удаления работы с сайта (это никак не отслеживается)
+                    login=login)  # удалить все работы на случай удаления работы с сайта (это никак не отслеживается)
                 database.update.update_student_works(new_student_works, login)  # заполнить новой информацией с нуля
 
                 # список работ у которых ТОЛЬКО обновился статус (не их появление)
@@ -75,7 +75,7 @@ async def send_notifications_periodically():
                 )
 
                 # после получения оценок, обновить базу со всеми оценками пользователя
-                database.delete.delete_all_student_grades(login)
+                database.delete.delete_all_student_grades(login=login)
                 database.update.update_student_grades(new_student_grades, login)
 
                 if len(updated_grades) > 0:

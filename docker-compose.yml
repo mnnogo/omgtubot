@@ -20,7 +20,3 @@ services:
     
   python:
     build: ./
-    environment:
-      KEY: YOUR_KEY
-      TELEGRAM_API_TOKEN: YOUR_BOT_API_TOKEN
-      TELEGRAM_ID: YOUR_TELEGRAM_ID

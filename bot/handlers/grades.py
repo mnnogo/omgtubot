@@ -10,6 +10,7 @@ import database.other
 import database.update
 import keyboards.grades
 import misc.utils
+from errors import ZeroArguementsError
 from misc.logger import logging
 
 # рутер для подключения в основном файле
@@ -57,7 +58,7 @@ async def show_term_grades(user_id: int, term: int, *, message_reply_to: Message
     if message_to_edit is None and message_reply_to is None:
         error_msg = 'Хотя бы один аргумент должен быть передан'
         logging.exception(error_msg)
-        raise ValueError(error_msg)
+        raise ZeroArguementsError(error_msg)
 
     grades_info_list = database.get.get_user_grades(user_id=user_id, term=term)
 

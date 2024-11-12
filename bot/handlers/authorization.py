@@ -23,7 +23,6 @@ from misc.logger import logging
 router = Router()
 r"""Router for authorization button"""
 
-
 # конфигурация логгинга
 logging = logging.getLogger(__name__)
 
@@ -37,7 +36,7 @@ class States(StatesGroup):
 
 
 # нажатие кнопки "Авторизация"
-@router.message(Command('authorization'))
+@router.message(F.text == 'Авторизация')
 async def authorization_command(message: Message, state: FSMContext):
     # если пользователь уже авторизован ###########################################
     if database.other.is_user_authorized(message.from_user.id):
@@ -45,6 +44,7 @@ async def authorization_command(message: Message, state: FSMContext):
         builder = InlineKeyboardBuilder()
         builder.row(InlineKeyboardButton(text='✅ Да', callback_data='btn_change_account'),
                     InlineKeyboardButton(text='❌ Нет', callback_data='btn_decline_change_account'))
+        builder.row(InlineKeyboardButton(text='Выход из аккаунта', callback_data='btn_logout_account'))
 
         await message.reply(f'Вы уже авторизованы под логином "{database.get.get_user_login(message.from_user.id)}". '
                             f'Хотите <b>изменить</b> аккаунт?', reply_markup=builder.as_markup())
@@ -71,6 +71,41 @@ async def btn_change_account_pressed(query: CallbackQuery, state: FSMContext):
 async def btn_decline_change_pressed(query: CallbackQuery, state: FSMContext):
     await query.message.delete()
     await query.message.answer('Операция отменена')
+    # выход из ожидания
+    await state.clear()
+
+
+# нажата кнопка 'Выход из аккаунта' при смене аккаунта
+@router.callback_query(States.waiting_for_change_acc_answer, F.data == 'btn_logout_account')
+async def btn_logout_account_pressed(query: CallbackQuery, state: FSMContext):
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text='✅ Да', callback_data='btn_logout_yes'),
+                InlineKeyboardButton(text='❌ Нет', callback_data='btn_logout_no'))
+
+    await query.message.delete()
+    await query.message.answer('Вы уверены?', reply_markup=builder.as_markup())
+
+
+# нажата кнопка '✅ Да' при подтверждении выхода
+@router.callback_query(States.waiting_for_change_acc_answer, F.data == 'btn_logout_yes')
+async def btn_logout_account_pressed(query: CallbackQuery, state: FSMContext):
+    database.delete.delete_all_student_works(user_id=query.from_user.id)
+    database.delete.delete_all_student_grades(user_id=query.from_user.id)
+    database.delete.delete_user_account(user_id=query.from_user.id)
+
+    await query.message.delete()
+    await query.message.answer('Вы вышли из аккаунта.')
+
+    # выход из ожидания
+    await state.clear()
+
+
+# нажата кнопка '❌ Нет' при подтверждении выхода
+@router.callback_query(States.waiting_for_change_acc_answer, F.data == 'btn_logout_no')
+async def btn_logout_account_pressed(query: CallbackQuery, state: FSMContext):
+    await query.message.delete()
+    await query.message.answer('Операция отменена.')
+
     # выход из ожидания
     await state.clear()
 
@@ -131,15 +166,16 @@ async def authorization_handler(message: Message, state: FSMContext):
     end_time = time.time()
     logging.info(f'Авторизация закончилась. Затраченное время: {end_time - start_time}')
 
-    is_user_subscribed = True
+    is_user_subscribed_notifications = True
+    is_user_subscribed_mailing = True
     # если пользователь уже был авторизован и меняет аккаунт, удаление старых работ и оценок из БД
     if database.other.is_user_authorized(message.from_user.id):
-        login = database.get.get_user_login(message.from_user.id)
-        database.delete.delete_all_student_works(login)
-        database.delete.delete_all_student_grades(login)
+        database.delete.delete_all_student_works(user_id=message.from_user.id)
+        database.delete.delete_all_student_grades(user_id=message.from_user.id)
 
         # взять из БД статус подписки и не изменять его
-        is_user_subscribed = database.other.is_user_subscribed_notifications(message.from_user.id)
+        is_user_subscribed_notifications = database.other.is_user_subscribed_notifications(message.from_user.id)
+        is_user_subscribed_mailing = database.other.is_user_subscribed_mailing(message.from_user.id)
 
     # кодирование пароля перед занесением в БД
     encrypted_password = encryption.encrypt(password)
@@ -149,7 +185,8 @@ async def authorization_handler(message: Message, state: FSMContext):
         user_id=message.from_user.id,
         login=login,
         password=encrypted_password,
-        notification_subscribe=is_user_subscribed,
+        notification_subscribe=is_user_subscribed_notifications,
+        mailing_subscribe=is_user_subscribed_mailing,
         term=selected_term,
         last_update=misc.utils.round_down_the_date(datetime.now().date())
     )
@@ -175,9 +212,10 @@ async def authorization_handler(message: Message, state: FSMContext):
 
     await warning_grades_message.delete()
 
-    msg = 'Успешно. При изменении статуса работ или оценок Вам придет уведомление.\n' if is_user_subscribed else \
-          'Успешно. У вас выключены уведомления, поэтому уведомления не будут приходить. ' \
-          'Это можно изменить в <b>настройках</b>\n'
+    msg = 'Успешно. При изменении статуса работ или оценок Вам придет уведомление.\n' \
+        if is_user_subscribed_notifications \
+        else 'Успешно. У вас выключены уведомления, поэтому уведомления не будут приходить. ' \
+             'Это можно изменить в <b>настройках</b>\n'
 
     await message.answer(msg +
                          '\n'

@@ -14,6 +14,7 @@ from bot_init import bot
 # рутер для подключения в основном файле
 router = Router()
 r"""Router for mailing button"""
+router.message.filter(F.from_user.id == misc.env.DEVELOPER_CHAT_ID)
 
 
 # конфигурация логгинга
@@ -26,7 +27,7 @@ class States(StatesGroup):
     waiting_for_confirmation = State()
 
 
-@router.message(F.from_user.id == misc.env.DEVELOPER_CHAT_ID, F.text == 'Сделать рассылку')
+@router.message(F.text == 'Сделать рассылку')
 async def btn_send_mailing_pressed(message: Message, state: FSMContext):
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text='❌ Отмена', callback_data='btn_cancel_mailing'))

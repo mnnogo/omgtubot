@@ -8,6 +8,7 @@ import html_parser.main
 import html_parser.works
 from GradeInfo import *
 from WorkInfo import *
+from errors import ZeroArguementsError
 from misc.logger import logging
 
 # конфигурация логгинга
@@ -81,7 +82,7 @@ def get_updated_status_works(*, login: str = None, updated_works: list[WorkInfo]
     if login is None and updated_works is None:
         error_msg = 'Хотя бы один аргумент должен быть передан'
         logging.exception(error_msg)
-        raise ValueError(error_msg)
+        raise ZeroArguementsError(error_msg)
 
     if updated_works is None:
         updated_works = get_updated_student_works(login)

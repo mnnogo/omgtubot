@@ -10,13 +10,14 @@ from bot_init import bot
 # рутер для подключения в основном файле
 router = Router()
 r"""Router for settings button"""
+router.message.filter(F.from_user.id == misc.env.DEVELOPER_CHAT_ID)
 
 
 # конфигурация логгинга
 logging = logging.getLogger(__name__)
 
 
-@router.message(F.from_user.id == misc.env.DEVELOPER_CHAT_ID, F.text == 'Обновить клавиатуру у всех')
+@router.message(F.text == 'Обновить клавиатуру у всех')
 async def btn_fixkeyboard_pressed(message: Message):
     all_users_id = database.get.get_users_list()
 
