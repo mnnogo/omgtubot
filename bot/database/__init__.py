@@ -1,6 +1,6 @@
 from typing import Any
 from misc.logger import logging
-import pymysql
+import psycopg2
 
 
 # конфигурация логгинга
@@ -16,11 +16,11 @@ def make_sql_query(query: str, params: tuple = ()) -> tuple[tuple[Any, ...], ...
     if there's only 1 parameter)"""
     logging.debug(f'Начался выполняться запрос "{query}" с параметрами {params}')
     try:
-        connection = pymysql.connect(
-            host='127.0.0.1',
-            user='root',
+        connection = psycopg2.connect(
+            host='localhost',
+            user='postgres',
             password='root',
-            database='omgtu_bot'
+            database='vkurse'
         )
     except Exception as e:
         error_msg = f'Ошибка подключения к базе данных: {e}'

@@ -55,21 +55,22 @@ async def update_keyboard_command(message: Message):
 
 async def run_bot():
     # предотвращение выключения бота
-    background_tasks.background.keep_alive()
-
-    # запуск прибавления семестра 31 января и 31 июля (или позже если бот был выключен)
-    asyncio.ensure_future(
-        background_tasks.term_update.try_update_term()
-    )
-
-    # запуск периодических уведомлений
-    asyncio.ensure_future(
-        background_tasks.notifications.send_notifications_periodically()
-    )
+    # background_tasks.background.keep_alive()
+    #
+    # # запуск прибавления семестра 31 января и 31 июля (или позже если бот был выключен)
+    # asyncio.ensure_future(
+    #     background_tasks.term_update.try_update_term()
+    # )
+    #
+    # # запуск периодических уведомлений
+    # asyncio.ensure_future(
+    #     background_tasks.notifications.send_notifications_periodically()
+    # )
 
     logging.debug('Попытка запустить бота...')
 
     try:
+        raise TypeError("what")
         await dp.start_polling(bot)
     except Exception as e:
         logging.exception(e)
