@@ -21,9 +21,11 @@ def get_student_works(*, login: str = None, user_id: int = None) -> list[WorkInf
         raise ZeroArguementsError(error_msg)
 
     # извлечение из БД всех работ (при None не ломается)
-    result = make_sql_query('SELECT work_name, subject, status FROM old_works JOIN user_info '
+    result = make_sql_query('SELECT work_name, subject, status '
+                            'FROM old_works JOIN user_info '
                             'ON old_works.login = user_info.login '
-                            'WHERE user_info.login = %s OR user_info.user_id = %s', (login, user_id))
+                            'WHERE user_info.login = ? OR user_info.user_id = ?'
+                            'ORDER BY work_id', (login, user_id))
 
     student_works = []
 
@@ -38,7 +40,7 @@ def get_user_login(user_id: int) -> str | None:
     r"""Gets authorized login of user with 'user_id' telegram ID
 
     :return: login, if user is in database; otherwise None."""
-    result = make_sql_query('SELECT login FROM user_info WHERE user_id = %s', (user_id,))
+    result = make_sql_query('SELECT login FROM user_info WHERE user_id = ?', (user_id,))
 
     if len(result) == 0:
         return None
@@ -55,7 +57,7 @@ def get_user_password(*, user_id: int = None, login: str = None) -> str:
         logging.exception(error_msg)
         raise ValueError(error_msg)
 
-    result = make_sql_query('SELECT password FROM user_info WHERE user_id = %s OR login = %s',
+    result = make_sql_query('SELECT password FROM user_info WHERE user_id = ? OR login = ?',
                             (user_id, login))
 
     if len(result) == 0:
@@ -70,7 +72,7 @@ def get_user_password(*, user_id: int = None, login: str = None) -> str:
 
 def get_user_id(login: str) -> int | None:
     r"""Gets user telegram ID, based on his authorized login in database, if there's any; othewise None."""
-    result = make_sql_query('SELECT user_id FROM user_info WHERE login = %s', (login,))
+    result = make_sql_query('SELECT user_id FROM user_info WHERE login = ?', (login,))
 
     if len(result) == 0:
         return None
@@ -98,13 +100,13 @@ def get_user_term(*, user_id: int = None, login: str = None) -> int:
         logging.exception(error_msg)
         raise ZeroArguementsError(error_msg)
 
-    result = make_sql_query('SELECT term FROM user_info WHERE user_id = %s OR login = %s', (user_id, login))
+    result = make_sql_query('SELECT term FROM user_info WHERE user_id = ? OR login = ?', (user_id, login))
 
     return result[0][0]
 
 
 def get_user_last_update(user_id: int) -> date:
-    result = make_sql_query('SELECT last_update FROM user_info WHERE user_id = %s', (user_id,))
+    result = make_sql_query('SELECT last_update FROM user_info WHERE user_id = ?', (user_id,))
 
     return result[0][0]
 
@@ -127,9 +129,9 @@ def get_user_max_term(*, user_id: int = None, login: str = None, based_on_works:
         login = get_user_login(user_id)
 
     if based_on_works:
-        result = make_sql_query('SELECT MAX(term) FROM old_grades WHERE login = %s', (login,))
+        result = make_sql_query('SELECT MAX(term) FROM old_grades WHERE login = ?', (login,))
     else:
-        result = make_sql_query('SELECT max_term FROM user_info WHERE user_id = %s', (user_id,))
+        result = make_sql_query('SELECT max_term FROM user_info WHERE user_id = ?', (user_id,))
 
     return result[0][0]
 
@@ -141,18 +143,24 @@ def get_user_grades(*, login: str = None, user_id: int = None, term: int = None)
         logging.exception(error_msg)
         raise ZeroArguementsError(error_msg)
 
-    # нужно ли выбирать по семестру или абсолютно все работы
+    # нужно ли выбирать по семестру или абсолютно все оценки
     if term is None:
         result = make_sql_query(
-            'SELECT subject, old_grades.term, control_rating, grade_type, grade FROM old_grades JOIN user_info '
-            'ON old_grades.login = user_info.login WHERE user_info.login = %s OR user_info.user_id = %s',
+            'SELECT subject, old_grades.term, control_rating, grade_type, grade '
+            'FROM old_grades JOIN user_info '
+            'ON old_grades.login = user_info.login '
+            'WHERE user_info.login = ? OR user_info.user_id = ?'
+            'ORDER BY grade_id',
             (login, user_id)
         )
     else:
         result = make_sql_query(
-            'SELECT subject, old_grades.term, control_rating, grade_type, grade FROM old_grades JOIN user_info '
-            'ON old_grades.login = user_info.login WHERE (user_info.login = %s OR user_info.user_id = %s) '
-            'AND old_grades.term = %s',
+            'SELECT subject, old_grades.term, control_rating, grade_type, grade '
+            'FROM old_grades JOIN user_info '
+            'ON old_grades.login = user_info.login '
+            'WHERE (user_info.login = ? OR user_info.user_id = ?) '
+            'AND old_grades.term = ?'
+            'ORDER BY grade_id',
             (login, user_id, term)
         )
 

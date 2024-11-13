@@ -165,3 +165,4 @@ cython_debug/
 /idea.txt
 /log.txt
 /commands.txt
+data/

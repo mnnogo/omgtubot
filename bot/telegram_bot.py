@@ -3,6 +3,7 @@ import asyncio
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
+import database
 from background_tasks import background
 import background_tasks.notifications
 import background_tasks.term_update
@@ -23,7 +24,7 @@ dp.include_routers(
 
 
 # команда /start
-@dp.message(CommandStart(), Command('help'))
+@dp.message(Command('start', 'help'))
 async def start_command(message: Message):
     msg = 'Привет! Этот бот позволяет отслеживать обновления статуса работ в отчетных работах и оценок на сайте ОмГТУ.\n' \
           '\n' \
@@ -70,7 +71,6 @@ async def run_bot():
     logging.debug('Попытка запустить бота...')
 
     try:
-        raise TypeError("what")
         await dp.start_polling(bot)
     except Exception as e:
         logging.exception(e)

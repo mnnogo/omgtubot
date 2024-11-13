@@ -13,8 +13,8 @@ def delete_all_student_works(*, user_id: int = None, login: str = None) -> None:
         logging.exception(error_msg)
         raise ZeroArguementsError(error_msg)
 
-    make_sql_query('DELETE old_works FROM old_works JOIN user_info ON user_info.login = old_works.login '
-                   'WHERE user_info.user_id = %s OR user_info.login = %s', (user_id, login))
+    make_sql_query('DELETE FROM old_works '
+                   'WHERE login IN (SELECT login FROM user_info WHERE user_id = ? OR login = ?)', (user_id, login))
 
 
 def delete_all_student_grades(*, user_id: int = None, login: str = None) -> None:
@@ -24,8 +24,8 @@ def delete_all_student_grades(*, user_id: int = None, login: str = None) -> None
         logging.exception(error_msg)
         raise ZeroArguementsError(error_msg)
 
-    make_sql_query('DELETE old_grades FROM old_grades JOIN user_info ON user_info.login = old_grades.login '
-                   'WHERE user_info.user_id = %s OR user_info.login = %s', (user_id, login))
+    make_sql_query('DELETE FROM old_grades '
+                   'WHERE login IN (SELECT login FROM user_info WHERE user_id = ? OR login = ?)', (user_id, login))
 
 
 def delete_user_account(*, user_id: int = None, login: str = None):
@@ -34,5 +34,6 @@ def delete_user_account(*, user_id: int = None, login: str = None):
         logging.exception(error_msg)
         raise ZeroArguementsError(error_msg)
 
-    make_sql_query('UPDATE user_info SET login = NULL, password = NULL, term = NULL, max_term = NULL,'
-                   'last_update = NULL WHERE user_id = %s OR login = %s', (user_id, login))
+    make_sql_query('UPDATE user_info '
+                   'SET login = NULL, password = NULL, term = NULL, max_term = NULL, last_update = NULL '
+                   'WHERE user_id = ? OR login = ?', (user_id, login))
