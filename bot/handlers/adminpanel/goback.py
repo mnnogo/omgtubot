@@ -17,10 +17,6 @@ router.message.filter(F.from_user.id == misc.env.DEVELOPER_CHAT_ID)
 logging = logging.getLogger(__name__)
 
 
-@router.message(F.text == 'Обновить клавиатуру у всех')
-async def btn_fixkeyboard_pressed(message: Message):
-    all_users_id = database.get.get_users_list()
-
-    for user_id in all_users_id:
-        await bot.send_message(user_id, 'Клавиатура обновлена.', reply_markup=keyboards.main.get_main_keyboard(user_id))
-
+@router.message(F.text == 'Назад')
+async def btn_goback_pressed(message: Message):
+    await message.reply("Кнопки", reply_markup=keyboards.main.get_main_keyboard(misc.env.DEVELOPER_CHAT_ID))

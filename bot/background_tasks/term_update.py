@@ -27,7 +27,7 @@ async def try_update_term() -> None:
                     continue
 
                 # был ли скипнут апдейт для пользователя или сейчас дата обновления
-                update_term: bool = True or misc.utils.was_update_skipped(
+                update_term: bool = misc.utils.was_update_skipped(
                     datetime.now().date(),
                     database.get.get_user_last_update(user_id)
                 ) or misc.utils.is_update_date_correct(

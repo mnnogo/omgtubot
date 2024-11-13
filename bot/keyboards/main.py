@@ -11,9 +11,7 @@ def get_main_keyboard(user_id: int) -> ReplyKeyboardMarkup:
                 KeyboardButton(text='Посмотреть зачетку'))
     builder.row(KeyboardButton(text='Настройки'))
 
-    # ...
     if user_id == misc.env.DEVELOPER_CHAT_ID:
-        builder.row(KeyboardButton(text='Сделать рассылку'))
-        builder.row(KeyboardButton(text='Обновить клавиатуру у всех'))
+        builder.row(KeyboardButton(text='Панель админа'))
 
     return builder.as_markup(resize_keyboard=True)
