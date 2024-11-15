@@ -3,7 +3,7 @@ import time
 
 import requests
 from bs4 import BeautifulSoup
-from WorkInfo import *
+from classes.WorkInfo import *
 from misc.logger import logging
 
 

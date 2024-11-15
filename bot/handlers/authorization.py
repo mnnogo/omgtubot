@@ -6,6 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, InlineKeyboardButton, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from requests import Session
 
 import database.delete
 import database.get
@@ -15,6 +16,7 @@ import encryption
 import html_parser.grades
 import html_parser.main
 import html_parser.works
+import html_parser.tasks
 import misc.utils
 from misc.logger import logging
 
@@ -52,7 +54,7 @@ async def authorization_command(message: Message, state: FSMContext):
         return
     ################################################################################
 
-    await message.reply('Введите логин от аккаунта:')
+    await message.reply('Введите логин от аккаунта ОмГТУ:')
     # ожидание ввода логина
     await state.set_state(States.waiting_for_login)
 
@@ -169,8 +171,7 @@ async def authorization_handler(message: Message, state: FSMContext):
     is_user_subscribed_mailing = True
     # если пользователь уже был авторизован и меняет аккаунт, удаление старых работ и оценок из БД
     if database.other.is_user_authorized(message.from_user.id):
-        database.delete.delete_all_student_works(user_id=message.from_user.id)
-        database.delete.delete_all_student_grades(user_id=message.from_user.id)
+        database.delete.delete_all_user_information(message.from_user.id)
 
         # взять из БД статус подписки и не изменять его
         is_user_subscribed_notifications = database.other.is_user_subscribed_notifications(message.from_user.id)
@@ -191,25 +192,28 @@ async def authorization_handler(message: Message, state: FSMContext):
     )
 
     warning_works_message = await message.answer('Успешно. Собираем информацию о работах с сайта. Процесс может '
-                                                 'занять около 3 минут.......')
+                                                 'занять до 3 минут...')
 
     # добавление/обновление работ в БД
-    all_works = html_parser.works.get_student_works(session)
-    database.update.update_student_works(all_works, login)
+    handle_student_works(session, login)
 
     await warning_works_message.delete()
 
     warning_grades_message = await message.answer('Успешно. Собираем информацию об оценках с сайта. Процесс может '
-                                                  'занять около 2 минут...')
+                                                  'занять до 2 минут...')
 
-    all_grades = html_parser.grades.get_student_grades(session)
-    database.update.update_student_grades(all_grades, login)
-
-    # из БД взять максимальное значение семестра и занести ее в user_info
-    max_term = database.get.get_user_max_term(login=login, based_on_works=True)
-    database.update.update_user_max_term(message.from_user.id, max_term)
+    # добавление/обновление оценок в БД
+    max_term = handle_student_grades(session, login, message.from_user.id)
 
     await warning_grades_message.delete()
+
+    warning_tasks_message = await message.answer('Успешно. Собираем информацию о заданиях с сайта. Процесс может '
+                                                 'занять до 2 минут...')
+
+    # добавление/обновление заданий в БД
+    handle_student_tasks(session, login)
+
+    await warning_tasks_message.delete()
 
     msg = 'Успешно. При изменении статуса работ или оценок Вам придет уведомление.\n' \
         if is_user_subscribed_notifications \
@@ -228,3 +232,24 @@ async def authorization_handler(message: Message, state: FSMContext):
                              f'Вы можете поменять это в настройках.')
 
     await state.clear()
+
+
+def handle_student_works(session: Session, login: str) -> None:
+    all_works = html_parser.works.get_student_works(session)
+    database.update.update_student_works(all_works, login)
+
+
+def handle_student_grades(session: Session, login: str, user_id: int) -> int:
+    all_grades = html_parser.grades.get_student_grades(session)
+    database.update.add_student_grades(all_grades, login)
+
+    # из БД взять максимальное значение семестра и занести ее в user_info
+    max_term = database.get.get_user_max_term(login=login, based_on_works=True)
+    database.update.update_user_max_term(user_id, max_term)
+
+    return max_term
+
+
+def handle_student_tasks(session: Session, login: str) -> None:
+    all_tasks = html_parser.tasks.get_student_tasks(session)
+    database.update.add_student_tasks(all_tasks, login)

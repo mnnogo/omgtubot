@@ -1,5 +1,6 @@
-from WorkInfo import *
-from GradeInfo import *
+from classes.TaskInfo import TaskInfo
+from classes.WorkInfo import *
+from classes.GradeInfo import *
 from datetime import datetime, timedelta, date
 
 
@@ -23,6 +24,16 @@ def format_grade_message(grade: GradeInfo) -> str:
     return msg
 
 
+def format_task_message(task: TaskInfo) -> str:
+    msg = f'<b>{task.subject}</b>\n\n'
+    msg += f'Дата загрузки: {task.upload_date.strftime("%d-%m-%Y %H:%M:%S")}\n'
+    msg += f'Преподаватель: {task.teacher}\n\n'
+    msg += f'Ссылка на файл: {task.file_url}\n\n' if task.file_url is not None else ''
+    msg += f'Комментарий к работе:\n{task.comment}'
+
+    return msg
+
+
 def round_down_the_date(date_to_change: date) -> date:
     r"""Rounds date down to 31 jan or 31 jul (update time)"""
     if (date_to_change.month == 1 or date_to_change.month == 7) and date_to_change.day == 31:
@@ -42,5 +53,5 @@ def is_update_date_correct(update_date: date) -> bool:
 
 
 def was_update_skipped(current_date: date, last_update_date: date) -> bool:
-    r"""Check if length between last update and given time > 6 months. If yes, update was skipped"""
+    r"""Checks if length between last update and given time > 6 months. If yes, update was skipped"""
     return current_date - last_update_date > timedelta(days=186)

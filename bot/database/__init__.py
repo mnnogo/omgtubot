@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 from misc.logger import logging
 import sqlite3
 
@@ -6,7 +6,7 @@ import sqlite3
 logging = logging.getLogger(__name__)
 
 
-def make_sql_query(query: str, params: tuple = ()) -> tuple[tuple[Any, ...], ...]:
+def make_sql_query(query: str, params: tuple = ()) -> list[Any]:
     r"""Makes an SQL query into database.
     :return: data of SQL result
 

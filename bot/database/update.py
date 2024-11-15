@@ -1,8 +1,9 @@
 from datetime import datetime, date
 
 import misc.utils
-from GradeInfo import *
-from WorkInfo import *
+from classes.GradeInfo import *
+from classes.TaskInfo import TaskInfo
+from classes.WorkInfo import *
 from database import make_sql_query
 from database.get import get_user_login
 from misc.logger import logging
@@ -53,6 +54,44 @@ def update_student_works(works: list[WorkInfo], login: str) -> None:
                        (login, work.work_name, work.subject, str(work.status.value)))
 
 
+def add_student_grades(grades_info: list[GradeInfo], login: str = None, user_id: int = None) -> None:
+    r"""At least one parameter should be given. Most optimal way is to give 'login' variable.
+    If both are given, only 'login' is used. Adds new works into database"""
+    if login is None and user_id is None:
+        error_msg = 'Хотя бы один аргумент должен быть передан'
+        logging.exception(error_msg)
+        raise ValueError(error_msg)
+
+    if login is None:
+        login = get_user_login(user_id)
+
+    for grade_info in grades_info:
+        # создание новой записи в БД
+        make_sql_query('INSERT INTO old_grades(login, subject, term, control_rating, grade_type, grade) '
+                       'VALUES (?, ?, ?, ?, ?, ?)',
+                       (login, grade_info.subject, grade_info.term, grade_info.control_rating,
+                        grade_info.grade_type, grade_info.grade.value))
+
+
+def add_student_tasks(tasks_info: list[TaskInfo], login: str = None, user_id: int = None) -> None:
+    r"""At least one parameter should be given. Most optimal way is to give 'login' variable.
+    If both are given, only 'login' is used. Updates already existing works in database. If work doesn't exist,
+    adds new work"""
+    if login is None and user_id is None:
+        error_msg = 'Хотя бы один аргумент должен быть передан'
+        logging.exception(error_msg)
+        raise ValueError(error_msg)
+
+    if login is None:
+        login = get_user_login(user_id)
+
+    for task_info in tasks_info:
+        make_sql_query('INSERT INTO old_tasks(login, subject, comment, file_url, upload_date, teacher) '
+                       'VALUES (?, ?, ?, ?, ?, ?)',
+                       (login, task_info.subject, task_info.comment, task_info.file_url, task_info.upload_date,
+                        task_info.teacher))
+
+
 def update_user_notification_subscribe(user_id: int, notification_subscribe: bool) -> None:
     r"""Changes database info about notification subsсription for user"""
     make_sql_query('UPDATE user_info SET notifications = ? WHERE user_id = ?',
@@ -71,29 +110,6 @@ def update_user_term(user_id: int, term: int) -> None:
 
 def update_user_max_term(user_id: int, term: int) -> None:
     make_sql_query('UPDATE user_info SET max_term = ? WHERE user_id = ?', (term, user_id))
-
-
-def update_student_grades(grades_info: list[GradeInfo], login: str = None, user_id: int = None) -> None:
-    r"""At least one parameter should be given. Most optimal way is to give 'login' variable.
-    If both are given, only 'login' is used. Updates already existing works in database. If work doesn't exist,
-    adds new work"""
-    if login is None and user_id is None:
-        error_msg = 'Хотя бы один аргумент должен быть передан'
-        logging.exception(error_msg)
-        raise ValueError(error_msg)
-
-    if login is None:
-        login = get_user_login(user_id)
-
-    for grade_info in grades_info:
-        # удаление старой записи, если она существует
-        make_sql_query('DELETE FROM old_grades WHERE login = ? AND subject = ? AND term = ?',
-                       (login, grade_info.subject, grade_info.term))
-        # создание новой записи в БД
-        make_sql_query('INSERT INTO old_grades(login, subject, term, control_rating, grade_type, grade) '
-                       'VALUES (?, ?, ?, ?, ?, ?)',
-                       (login, grade_info.subject, grade_info.term, grade_info.control_rating,
-                        grade_info.grade_type, grade_info.grade.value))
 
 
 def update_user_last_update(user_id: int, date_to: date) -> None:

@@ -6,8 +6,9 @@ import database.update
 import html_parser.grades
 import html_parser.main
 import html_parser.works
-from GradeInfo import *
-from WorkInfo import *
+from classes.GradeInfo import *
+from classes.TaskInfo import TaskInfo
+from classes.WorkInfo import *
 from errors import ZeroArguementsError
 from misc.logger import logging
 
@@ -91,6 +92,22 @@ def get_updated_status_works(*, login: str = None, updated_works: list[WorkInfo]
     return [work for work in updated_works if work.status != WorkStatus.PENDING]
 
 
+def get_updated_student_tasks_by_comparing(
+        old_tasks: list[TaskInfo],
+        new_tasks: list[TaskInfo]) -> list[TaskInfo]:
+
+    updated_student_info = []
+
+    for taskInfo in new_tasks:
+        # если работа не изменилась - скип
+        if taskInfo in old_tasks:
+            continue
+        # иначе - добавить в список обновленных
+        updated_student_info.append(taskInfo)
+
+    return updated_student_info
+
+
 def change_user_notification_subscribe(user_id: int, notification_subscribe: bool) -> None:
     r"""Changes info about notification subsсription for user"""
     database.update.update_user_notification_subscribe(user_id, notification_subscribe)
@@ -127,7 +144,7 @@ def get_updated_student_grades(login: str, password: str = None, session: reques
         should_close_session = True
 
     # получение оценок до проверки и после проверки
-    old_student_grades = database.get.get_user_grades(login=login)
+    old_student_grades = database.get.get_student_grades(login=login)
     new_student_grades = html_parser.grades.get_student_grades(session)
 
     for gradeInfo in new_student_grades:

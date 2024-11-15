@@ -1,10 +1,11 @@
-from datetime import date
+from datetime import date, datetime
 
 import encryption
+from classes.TaskInfo import TaskInfo
 from database import make_sql_query
 
-from GradeInfo import *
-from WorkInfo import *
+from classes.GradeInfo import *
+from classes.WorkInfo import *
 from errors import ZeroArguementsError
 from misc.logger import logging
 
@@ -34,6 +35,66 @@ def get_student_works(*, login: str = None, user_id: int = None) -> list[WorkInf
         student_works.append(WorkInfo(work_name, subject, WorkStatus(int(status))))
 
     return student_works
+
+
+def get_student_grades(*, login: str = None, user_id: int = None, term: int = None) -> list[GradeInfo]:
+    r"""At least one parameter should be given. Returns empty list if works doesn't exist"""
+    if login is None and user_id is None:
+        error_msg = 'Хотя бы один аргумент должен быть передан'
+        logging.exception(error_msg)
+        raise ZeroArguementsError(error_msg)
+
+    # нужно ли выбирать по семестру или абсолютно все оценки
+    if term is None:
+        result = make_sql_query(
+            'SELECT subject, old_grades.term, control_rating, grade_type, grade '
+            'FROM old_grades JOIN user_info '
+            'ON old_grades.login = user_info.login '
+            'WHERE user_info.login = ? OR user_info.user_id = ?'
+            'ORDER BY grade_id',
+            (login, user_id)
+        )
+    else:
+        result = make_sql_query(
+            'SELECT subject, old_grades.term, control_rating, grade_type, grade '
+            'FROM old_grades JOIN user_info '
+            'ON old_grades.login = user_info.login '
+            'WHERE (user_info.login = ? OR user_info.user_id = ?) '
+            'AND old_grades.term = ?'
+            'ORDER BY grade_id',
+            (login, user_id, term)
+        )
+
+    student_grades = []
+
+    for subject, term, control_rating, grade_type, grade in result:
+        student_grades.append(GradeInfo(subject, term, control_rating, grade_type, Grade(grade)))
+
+    return student_grades
+
+
+def get_student_tasks(*, login: str = None, user_id: int = None) -> list[TaskInfo]:
+    r"""At least one parameter should be given. Returns empty list if works doesn't exist"""
+    if login is None and user_id is None:
+        error_msg = 'Хотя бы один аргумент должен быть передан'
+        logging.exception(error_msg)
+        raise ZeroArguementsError(error_msg)
+
+    # извлечение из БД всех заданий контактной работы
+    result = make_sql_query('SELECT subject, comment, file_url, upload_date, teacher '
+                            'FROM old_tasks JOIN user_info '
+                            'ON old_tasks.login = user_info.login '
+                            'WHERE old_tasks.login = ? OR user_id = ?'
+                            'ORDER BY work_id', (login, user_id))
+
+    student_tasks = []
+
+    # перебор по каждой работе
+    for subject, comment, file_url, upload_date, teacher in result:
+        student_tasks.append(TaskInfo(subject, comment, file_url, datetime.strptime(upload_date, "%Y-%m-%d %H:%M:%S"),
+                                      teacher))
+
+    return student_tasks
 
 
 def get_user_login(user_id: int) -> str | None:
@@ -108,14 +169,15 @@ def get_user_term(*, user_id: int = None, login: str = None) -> int:
 def get_user_last_update(user_id: int) -> date:
     result = make_sql_query('SELECT last_update FROM user_info WHERE user_id = ?', (user_id,))
 
-    return result[0][0]
+    return datetime.strptime(result[0][0], "%Y-%m-%d %H:%M:%S").date()
 
 
 def get_user_max_term(*, user_id: int = None, login: str = None, based_on_works: bool = False) -> int:
     r"""
     :param login: omgtu login
     :param user_id: telegram user id
-    :param based_on_works: set it to True if max_term in table user_info is still not set to correct value. Then it will check max term of all grades in old_grade table
+    :param based_on_works: set it to True if max_term in table user_info is still not set to correct value. Then it will
+    check max term of all grades in old_grade table
     """
     if user_id is None and login is None:
         error_msg = 'Хотя бы один аргумент должен быть передан'
@@ -134,42 +196,6 @@ def get_user_max_term(*, user_id: int = None, login: str = None, based_on_works:
         result = make_sql_query('SELECT max_term FROM user_info WHERE user_id = ?', (user_id,))
 
     return result[0][0]
-
-
-def get_user_grades(*, login: str = None, user_id: int = None, term: int = None) -> list[GradeInfo]:
-    r"""At least one parameter should be given. Returns empty list if works doesn't exist"""
-    if login is None and user_id is None:
-        error_msg = 'Хотя бы один аргумент должен быть передан'
-        logging.exception(error_msg)
-        raise ZeroArguementsError(error_msg)
-
-    # нужно ли выбирать по семестру или абсолютно все оценки
-    if term is None:
-        result = make_sql_query(
-            'SELECT subject, old_grades.term, control_rating, grade_type, grade '
-            'FROM old_grades JOIN user_info '
-            'ON old_grades.login = user_info.login '
-            'WHERE user_info.login = ? OR user_info.user_id = ?'
-            'ORDER BY grade_id',
-            (login, user_id)
-        )
-    else:
-        result = make_sql_query(
-            'SELECT subject, old_grades.term, control_rating, grade_type, grade '
-            'FROM old_grades JOIN user_info '
-            'ON old_grades.login = user_info.login '
-            'WHERE (user_info.login = ? OR user_info.user_id = ?) '
-            'AND old_grades.term = ?'
-            'ORDER BY grade_id',
-            (login, user_id, term)
-        )
-
-    user_grades = []
-
-    for subject, term, control_rating, grade_type, grade in result:
-        user_grades.append(GradeInfo(subject, term, control_rating, grade_type, Grade(grade)))
-
-    return user_grades
 
 
 def get_users_list() -> list[int]:

@@ -60,7 +60,7 @@ async def show_term_grades(user_id: int, term: int, *, message_reply_to: Message
         logging.exception(error_msg)
         raise ZeroArguementsError(error_msg)
 
-    grades_info_list = database.get.get_user_grades(user_id=user_id, term=term)
+    grades_info_list = database.get.get_student_grades(user_id=user_id, term=term)
 
     msg = f'<b>Оценки в {term} семестре:</b>\n'
 

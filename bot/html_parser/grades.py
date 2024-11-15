@@ -2,7 +2,7 @@ import time
 
 import requests
 
-from GradeInfo import *
+from classes.GradeInfo import *
 from bs4 import BeautifulSoup, ResultSet
 from misc.logger import logging
 from errors import ParseError

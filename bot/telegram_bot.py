@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -70,6 +71,6 @@ async def run_bot():
 
     try:
         await dp.start_polling(bot)
-    except Exception as e:
-        logging.exception(e)
-        await errors_handler.notify_developer(str(e))
+    except Exception:
+        logging.exception(traceback.format_exc())
+        await errors_handler.notify_developer(traceback.format_exc())

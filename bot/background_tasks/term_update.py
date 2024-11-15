@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from datetime import datetime
 
 import database.get
@@ -49,9 +50,9 @@ async def try_update_term() -> None:
                         misc.utils.round_down_the_date(datetime.now().date())
                     )
 
-        except Exception as e:
-            logging.exception(e)
-            await errors_handler.notify_developer(str(e))
+        except Exception:
+            logging.exception(traceback.format_exc())
+            await errors_handler.notify_developer(traceback.format_exc())
 
         # проверка каждые пол месяца (макс. пол месяца задержки некритично)
         await asyncio.sleep(60 * 60 * 24 * 15)
