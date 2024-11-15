@@ -2,6 +2,7 @@ from re import Match
 
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
+from aiogram.exceptions import TelegramBadRequest
 
 import database
 import database.delete
@@ -70,7 +71,15 @@ async def show_term_grades(user_id: int, term: int, *, message_reply_to: Message
 
     # количество семестров у пользователя
     user_max_term = database.get.get_user_max_term(user_id=user_id)
+
+    # клавиатура к сообщению
+    reply_markup = keyboards.grades.get_grades_default_kb(user_max_term)
+
     if message_to_edit is None:
-        await message_reply_to.reply(text=msg, reply_markup=keyboards.grades.get_grades_default_kb(user_max_term))
+        await message_reply_to.reply(text=msg, reply_markup=reply_markup)
     else:
-        await message_to_edit.edit_text(text=msg, reply_markup=keyboards.grades.get_grades_default_kb(user_max_term))
+        # избежание ошибки редактирования сообщения на то же самое сообщение (так в ТГ нельзя)
+        try:
+            await message_to_edit.edit_text(text=msg, reply_markup=reply_markup)
+        except TelegramBadRequest:
+            return
