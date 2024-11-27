@@ -53,7 +53,7 @@ def delete_user_account(*, user_id: int = None, login: str = None):
 
 def delete_user(user_id: int) -> None:
     r"""Deletes user from user_info completely."""
-    make_sql_query('DELETE FROM user_info'
+    make_sql_query('DELETE FROM user_info '
                    'WHERE user_id = ?', (user_id,))
 
 

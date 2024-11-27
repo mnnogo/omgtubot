@@ -1,8 +1,10 @@
 import asyncio
 import time
 import traceback
+from io import BytesIO
 
-from aiogram.types import LinkPreviewOptions
+from aiogram.types import LinkPreviewOptions, BufferedInputFile
+from aiogram.utils.media_group import MediaGroupBuilder
 from requests import Session
 
 import html_parser.grades
@@ -127,7 +129,7 @@ async def handle_student_tasks(user_id: int, login: str, session: Session, user_
     database.update.add_student_tasks(new_student_tasks, login)
 
     if len(updated_tasks) > 0:
-        await send_tasks_notification(user_id, updated_tasks)
+        await send_tasks_notification(user_id, updated_tasks, session)
         user_notif_info.add(user_id)
 
 
@@ -179,20 +181,50 @@ async def send_grades_notification(user_id: int, grades_to_send: list[GradeInfo]
     await bot.send_message(user_id, msg)
 
 
-async def send_tasks_notification(user_id: int, tasks_to_send: list[TaskInfo]):
+async def send_tasks_notification(user_id: int, tasks_to_send: list[TaskInfo], session: Session):
     if len(tasks_to_send) == 0:
         await bot.send_message(user_id, 'Ошибочное уведомление.')
         return
 
     if len(tasks_to_send) == 1:
+        # файлы, которые надо прикрепить к сообщению
+        media = get_task_media(tasks_to_send[0], session)
+
         await bot.send_message(user_id,
                                f'Выложено новое <b>задание</b> в контактную работу:\n\n'
                                f'{misc.utils.format_task_message(tasks_to_send[0])}',
                                link_preview_options=LinkPreviewOptions(is_disabled=True))
+
+        if len(media.build()) > 0:
+            await bot.send_media_group(chat_id=misc.env.DEVELOPER_CHAT_ID, media=media.build())
+
         return
 
     await bot.send_message(user_id, 'Выложены новые <b>задания</b> в контактную работу:')
 
     for task in tasks_to_send:
+        # файлы, которые надо прикрепить к сообщению
+        media = get_task_media(task, session)
+
         await bot.send_message(user_id, misc.utils.format_task_message(task),
                                link_preview_options=LinkPreviewOptions(is_disabled=True))
+
+        if len(media.build()) > 0:
+            await bot.send_media_group(chat_id=misc.env.DEVELOPER_CHAT_ID, media=media.build())
+
+
+def get_task_media(task: TaskInfo, session: Session) -> MediaGroupBuilder:
+    r"""
+    :return:  MediaGroupBuilder object contaiting all files attached to task
+    """
+    # "список" файлов которые надо отправить
+    media = MediaGroupBuilder()
+
+    # по ссылкам файлов и сессии с авторизованным пользователем создаем "файлы" в памяти, добавляем в список
+    for file_info in task.files_info:
+        file_content = session.get(file_info.url)
+        file_like_object = BytesIO(file_content.content)
+
+        media.add_document(BufferedInputFile(file_like_object.read(), file_info.name))
+
+    return media

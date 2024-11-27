@@ -1,6 +1,8 @@
+import json
 from datetime import date, datetime
 
 import encryption
+from classes.FileInfo import FileInfo
 from classes.TaskInfo import TaskInfo
 from database import make_sql_query
 
@@ -81,17 +83,21 @@ def get_student_tasks(*, login: str = None, user_id: int = None) -> list[TaskInf
         raise ZeroArguementsError(error_msg)
 
     # извлечение из БД всех заданий контактной работы
-    result = make_sql_query('SELECT subject, comment, file_url, upload_date, teacher '
+    result = make_sql_query('SELECT subject, comment, files_info, upload_date, teacher '
                             'FROM old_tasks JOIN user_info '
                             'ON old_tasks.login = user_info.login '
                             'WHERE old_tasks.login = ? OR user_id = ?'
-                            'ORDER BY work_id', (login, user_id))
+                            'ORDER BY task_id', (login, user_id))
 
     student_tasks = []
 
     # перебор по каждой работе
-    for subject, comment, file_url, upload_date, teacher in result:
-        student_tasks.append(TaskInfo(subject, comment, file_url, datetime.strptime(upload_date, "%Y-%m-%d %H:%M:%S"),
+    for subject, comment, files_info_str, upload_date, teacher in result:
+        # строку вида JSON из БД преобразовать в list[FileInfo]
+        files_info_dict_list = json.loads(files_info_str)
+        files_info = [FileInfo(name=file["name"], url=file["url"]) for file in files_info_dict_list]
+
+        student_tasks.append(TaskInfo(subject, comment, files_info, datetime.strptime(upload_date, "%Y-%m-%d %H:%M:%S"),
                                       teacher))
 
     return student_tasks
@@ -210,7 +216,7 @@ def get_users_list() -> list[int]:
 
 
 def get_users_to_update_term() -> list[int]:
-    r"""Gets users whose term > max_term"""
+    r"""Gets users whose term < max_term"""
     # term превышает max_term на 1 в последний апдейт юзера, иначе надо обновлять
     result_tuples = make_sql_query('SELECT user_id FROM user_info WHERE max_term >= term')
 

@@ -15,7 +15,7 @@ def make_sql_query(query: str, params: tuple = ()) -> list[Any]:
     if there's only 1 parameter)"""
     logging.debug(f'Начался выполняться запрос "{query}" с параметрами {params}')
     try:
-        connection = sqlite3.connect('/data/vkurse.db')
+        connection = sqlite3.connect('data/vkurse.db')  # TODO: вернуть палочку
     except Exception as e:
         error_msg = f'Ошибка подключения к базе данных: {e}'
         logging.exception(error_msg)

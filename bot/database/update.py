@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, date
 
 import misc.utils
@@ -86,9 +87,13 @@ def add_student_tasks(tasks_info: list[TaskInfo], login: str = None, user_id: in
         login = get_user_login(user_id)
 
     for task_info in tasks_info:
-        make_sql_query('INSERT INTO old_tasks(login, subject, comment, file_url, upload_date, teacher) '
+        make_sql_query('INSERT INTO old_tasks(login, subject, comment, files_info, upload_date, teacher) '
                        'VALUES (?, ?, ?, ?, ?, ?)',
-                       (login, task_info.subject, task_info.comment, task_info.file_url, task_info.upload_date,
+                       (login,
+                        task_info.subject,
+                        task_info.comment,
+                        json.dumps([file_info.to_dict() for file_info in task_info.files_info]),
+                        task_info.upload_date,
                         task_info.teacher))
 
 

@@ -28,8 +28,7 @@ def format_task_message(task: TaskInfo) -> str:
     msg = f'<b>{task.subject}</b>\n\n'
     msg += f'Дата загрузки: {task.upload_date.strftime("%d-%m-%Y %H:%M:%S")}\n'
     msg += f'Преподаватель: {task.teacher}\n\n'
-    msg += f'Ссылка на файл: {task.file_url}\n\n' if task.file_url is not None else ''
-    msg += f'Комментарий к работе:\n{task.comment}'
+    msg += f'<b>Комментарий к работе:</b>\n' + (f'{task.comment}' if task.comment.strip() != '' else '<i>Отсутствует</i>')
 
     return msg
 

@@ -166,3 +166,4 @@ cython_debug/
 /log.txt
 /commands.txt
 data/
+.backup

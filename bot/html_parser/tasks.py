@@ -3,10 +3,10 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 
+from classes.FileInfo import FileInfo
 from classes.TaskInfo import TaskInfo
 from classes.TaskSubjectInfo import TaskSubjectInfo
 from misc.logger import logging
-
 
 # конфигурация логгинга
 logging = logging.getLogger(__name__)
@@ -51,13 +51,16 @@ def get_student_tasks(session: requests.Session) -> list[TaskInfo]:
 
             subject = subject_and_link.subject
             comment = task_info[1].text
-            link_element = task_info[2].find('a')
-            file_url = ('https://up.omgtu.ru' + link_element['href']) if link_element else None
+            file_elements = task_info[2].find_all('a')  # блок с ссылкой на файл + названием
+            files_info = [
+                FileInfo(name=file.find("h4").text.strip(), url='https://up.omgtu.ru' + file['href'])
+                for file in file_elements
+            ]
             upload_date = datetime.strptime(task_info[3].text, "%Y-%m-%d %H:%M:%S")
             teacher = task_info[4].text
 
             student_tasks.append(
-                TaskInfo(subject, comment, file_url, upload_date, teacher)
+                TaskInfo(subject, comment, files_info, upload_date, teacher)
             )
 
     return student_tasks
@@ -96,4 +99,3 @@ def get_every_subject_link(session: requests.Session) -> list[TaskSubjectInfo]:
         subject_links.append(TaskSubjectInfo(subject, link))
 
     return subject_links
-
