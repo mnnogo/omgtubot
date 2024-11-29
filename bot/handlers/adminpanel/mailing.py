@@ -8,6 +8,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 import database.get
 import database.other
 import misc.env
+import strings
 from misc.logger import logging
 from bot_init import bot
 
@@ -27,7 +28,7 @@ class States(StatesGroup):
     waiting_for_confirmation = State()
 
 
-@router.message(F.text == 'Сделать рассылку')
+@router.message(F.text == strings.CREATE_MAILING)
 async def btn_send_mailing_pressed(message: Message, state: FSMContext):
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text='❌ Отмена', callback_data='btn_cancel_mailing'))

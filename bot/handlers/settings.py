@@ -8,6 +8,7 @@ import database.delete
 import database.get
 import database.other
 import database.update
+import strings
 import user_functions
 from misc.logger import logging
 
@@ -26,7 +27,7 @@ class States(StatesGroup):
 
 
 # нажатие кнопки "Настройки"
-@router.message(F.text == 'Настройки')
+@router.message(F.text == strings.OPEN_SETTINGS)
 async def notifications_settings_command(message: Message):
     if not database.other.is_user_authorized(message.from_user.id):
         await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')

@@ -18,6 +18,7 @@ import html_parser.main
 import html_parser.works
 import html_parser.tasks
 import misc.utils
+import strings
 from misc.logger import logging
 
 # рутер для подключения в основном файле
@@ -37,7 +38,7 @@ class States(StatesGroup):
 
 
 # нажатие кнопки "Авторизация"
-@router.message(F.text == 'Авторизация')
+@router.message(F.text == strings.START_AUTH)
 async def authorization_command(message: Message, state: FSMContext):
     # если пользователь уже авторизован ###########################################
     if database.other.is_user_authorized(message.from_user.id):

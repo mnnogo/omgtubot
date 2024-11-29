@@ -3,6 +3,7 @@ from aiogram.types import Message
 
 import misc.env
 import keyboards.panel_admin
+import strings
 from misc.logger import logging
 from bot_init import dp
 
@@ -23,6 +24,6 @@ dp.include_routers(
 )
 
 
-@router.message(F.text == 'Панель админа')
+@router.message(F.text == strings.OPEN_ADMIN_PANEL)
 async def btn_admin_panel_pressed(message: Message):
-    await message.reply(text="Кнопки", reply_markup=keyboards.panel_admin.get_admin_panel_keyboard())
+    await message.reply(text='Кнопки', reply_markup=keyboards.panel_admin.get_admin_panel_keyboard())

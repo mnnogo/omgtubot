@@ -2,6 +2,7 @@ from aiogram import Router, F
 
 import database.get
 import keyboards.main
+import strings
 from misc.logger import logging
 import misc.env
 from bot_init import bot
@@ -16,7 +17,7 @@ router.message.filter(F.from_user.id == misc.env.DEVELOPER_CHAT_ID)
 logging = logging.getLogger(__name__)
 
 
-@router.message(F.text == 'Обновить клавиатуру у всех')
+@router.message(F.text == strings.FIX_ALL_KEYBOARDS)
 async def btn_fixkeyboard_pressed():
     all_users_id = database.get.get_users_list()
 

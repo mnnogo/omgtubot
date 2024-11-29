@@ -11,6 +11,7 @@ import database.other
 import database.update
 import keyboards.grades
 import misc.utils
+import strings
 from errors import ZeroArguementsError
 from misc.logger import logging
 
@@ -23,7 +24,7 @@ logging = logging.getLogger(__name__)
 
 
 # нажатие кнопки "Посмотреть зачетку"
-@router.message(F.text == 'Посмотреть зачетку')
+@router.message(F.text == strings.VIEW_GRADES)
 async def view_all_grades(message: Message):
     if not database.other.is_user_authorized(message.from_user.id):
         await message.reply('Вы еще не авторизованы. Для начала пройдите <b>Авторизацию</b>.')

@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 
 import database
 import keyboards.sqlquery
+import strings
 from misc.logger import logging
 import misc.env
 
@@ -23,7 +24,7 @@ class States(StatesGroup):
     waiting_for_query = State()
 
 
-@router.message(F.text == 'Выполнить SQL-запрос')
+@router.message(F.text == strings.CREATE_SQL_QUERY)
 async def btn_sql_query_pressed(message: Message, state: FSMContext):
     await message.reply(text="Введите запрос:", reply_markup=keyboards.sqlquery.get_sqlquery_keyboard())
     await state.set_state(States.waiting_for_query)

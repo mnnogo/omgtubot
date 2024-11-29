@@ -3,6 +3,7 @@ from aiogram.types import Message
 
 import database.get
 import keyboards.main
+import strings
 from misc.logger import logging
 import misc.env
 from bot_init import bot
@@ -17,6 +18,6 @@ router.message.filter(F.from_user.id == misc.env.DEVELOPER_CHAT_ID)
 logging = logging.getLogger(__name__)
 
 
-@router.message(F.text == 'Назад')
+@router.message(F.text == strings.GO_BACK)
 async def btn_goback_pressed(message: Message):
     await message.reply("Кнопки", reply_markup=keyboards.main.get_main_keyboard(misc.env.DEVELOPER_CHAT_ID))
