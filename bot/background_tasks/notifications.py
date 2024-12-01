@@ -201,7 +201,7 @@ async def send_tasks_notification(user_id: int, tasks_to_send: list[TaskInfo], s
                                link_preview_options=LinkPreviewOptions(is_disabled=True))
 
         if len(media.build()) > 0:
-            await bot.send_media_group(chat_id=misc.env.DEVELOPER_CHAT_ID, media=media.build())
+            await bot.send_media_group(chat_id=user_id, media=media.build())
 
         return
 
@@ -215,7 +215,7 @@ async def send_tasks_notification(user_id: int, tasks_to_send: list[TaskInfo], s
                                link_preview_options=LinkPreviewOptions(is_disabled=True))
 
         if len(media.build()) > 0:
-            await bot.send_media_group(chat_id=misc.env.DEVELOPER_CHAT_ID, media=media.build())
+            await bot.send_media_group(chat_id=user_id, media=media.build())
 
 
 def get_task_media(task: TaskInfo, session: Session) -> MediaGroupBuilder:

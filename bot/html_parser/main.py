@@ -34,7 +34,7 @@ def authorize(login: str, password: str) -> requests.Session | int:
     # выполнение POST запроса на авторизацию
     with requests.session() as session:
         try:
-            response = session.post(login_url, data=payload, verify=False)
+            response = session.post(login_url, data=payload, verify=False, timeout=60)
         except requests.exceptions.Timeout:
             return 1
 
