@@ -1,3 +1,5 @@
+import html
+
 from aiogram import Router
 from aiogram.types import ErrorEvent
 
@@ -22,4 +24,10 @@ async def errors_handler(event: ErrorEvent):
 
 # функция для уведомления разработчика о возникновении крит. ошибки
 async def notify_developer(exception_text: str):
-    await bot.send_message(misc.env.DEVELOPER_CHAT_ID, f"Возникла критическая ошибка: {exception_text}")
+    # экранирование текста, чтобы избежать проблем с тегами
+    safe_text = html.escape(f"Возникла критическая ошибка: {exception_text}")
+
+    if len(safe_text) > 4096:
+        safe_text = safe_text[-4090:]
+
+    await bot.send_message(misc.env.DEVELOPER_CHAT_ID, safe_text)
