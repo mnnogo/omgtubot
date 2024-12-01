@@ -53,6 +53,11 @@ async def send_notifications_periodically():
                 # получить сессию с авторизованным пользователем
                 session = html_parser.main.authorize(login, password)
 
+                # нет доступа к сайту
+                if session == 1:
+                    await errors_handler.notify_developer('Ошибка подключения к сайту ОмГТУ')
+                    return
+
                 # обработка каждого вида уведомлений
                 await handle_student_works(user_id, login, session, user_notif_info)
                 await handle_student_grades(user_id, login, session, user_notif_info)

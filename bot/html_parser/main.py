@@ -33,7 +33,10 @@ def authorize(login: str, password: str) -> requests.Session | int:
 
     # выполнение POST запроса на авторизацию
     with requests.session() as session:
-        response = session.post(login_url, data=payload, verify=False)
+        try:
+            response = session.post(login_url, data=payload, verify=False)
+        except requests.exceptions.Timeout:
+            return 1
 
         if response.status_code != 200:
             logging.exception(f'Ошибка выполнения POST запроса на сайт {login_url}')
