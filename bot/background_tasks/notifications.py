@@ -56,7 +56,7 @@ async def send_notifications_periodically():
                 # нет доступа к сайту
                 if session == 1:
                     await errors_handler.notify_developer('Ошибка подключения к сайту ОмГТУ')
-                    return
+                    continue
 
                 # обработка каждого вида уведомлений
                 await handle_student_works(user_id, login, session, user_notif_info)

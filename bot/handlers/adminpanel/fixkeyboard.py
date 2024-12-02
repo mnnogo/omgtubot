@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from aiogram.types import Message
 
 import database.get
 import keyboards.main
@@ -18,7 +19,7 @@ logging = logging.getLogger(__name__)
 
 
 @router.message(F.text == strings.FIX_ALL_KEYBOARDS)
-async def btn_fixkeyboard_pressed():
+async def btn_fixkeyboard_pressed(message: Message):
     all_users_id = database.get.get_users_list()
 
     for user_id in all_users_id:
