@@ -22,7 +22,7 @@ dp.include_routers(
 )
 
 
-# команда /start
+# команда /start и /help
 @dp.message(Command('start', 'help'))
 async def start_command(message: Message):
     msg = 'Привет! Этот бот позволяет отслеживать обновления статуса работ в отчетных работах и оценок на сайте ОмГТУ.\n' \

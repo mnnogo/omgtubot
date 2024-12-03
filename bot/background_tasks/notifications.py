@@ -5,7 +5,7 @@ from io import BytesIO
 
 from aiogram.types import LinkPreviewOptions, BufferedInputFile
 from aiogram.utils.media_group import MediaGroupBuilder
-from requests import Session
+from requests import Session, ConnectTimeout
 
 import html_parser.grades
 import html_parser.main
@@ -79,14 +79,18 @@ async def send_notifications_periodically():
 async def handle_student_works(user_id: int, login: str, session: Session, user_notif_info: set) -> None:
     # получение старых работ из БД и новых с сайта
     old_student_works = database.get.get_student_works(login=login)
-    new_student_works = html_parser.works.get_student_works(session)
+    try:
+        new_student_works = html_parser.works.get_student_works(session)
+    except (ConnectionError, ConnectTimeout):
+        await errors_handler.notify_developer(traceback.format_exc())
+        return
 
     # измененные работы
     updated_works = user_functions.get_updated_student_works_by_comparing(
         old_student_works, new_student_works
     )
 
-    # после получения работ, обновить базу со всеми работами пользователя
+    # после получения работ, обновить базу со всеми работами пользователя, если работы были получены
     database.delete.delete_all_student_works(
         login=login)  # удалить все работы на случай удаления работы с сайта (это никак не отслеживается)
     database.update.update_student_works(new_student_works, login)  # заполнить новой информацией с нуля
@@ -103,7 +107,11 @@ async def handle_student_works(user_id: int, login: str, session: Session, user_
 async def handle_student_grades(user_id: int, login: str, session: Session, user_notif_info: set) -> None:
     # получение старых оценок из БД и новых с сайта
     old_student_grades = database.get.get_student_grades(login=login)
-    new_student_grades = html_parser.grades.get_student_grades(session)
+    try:
+        new_student_grades = html_parser.grades.get_student_grades(session)
+    except (ConnectionError, ConnectTimeout):
+        await errors_handler.notify_developer(traceback.format_exc())
+        return
 
     # измененные оценки
     updated_grades = user_functions.get_updated_student_grades_by_comparing(
@@ -122,7 +130,11 @@ async def handle_student_grades(user_id: int, login: str, session: Session, user
 async def handle_student_tasks(user_id: int, login: str, session: Session, user_notif_info: set) -> None:
     # получение старых заданий из БД и новых с сайта
     old_student_tasks = database.get.get_student_tasks(login=login)
-    new_student_tasks = html_parser.tasks.get_student_tasks(session)
+    try:
+        new_student_tasks = html_parser.tasks.get_student_tasks(session)
+    except (ConnectionError, ConnectTimeout):
+        await errors_handler.notify_developer(traceback.format_exc())
+        return
 
     # измененные оценки
     updated_tasks = user_functions.get_updated_student_tasks_by_comparing(
